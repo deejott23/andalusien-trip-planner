@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>App Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }
+        .container { max-width: 800px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .status { padding: 10px; margin: 10px 0; border-radius: 4px; }
+        .success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .warning { background: #fff3cd; color: #856404; border: 1px solid #ffeaa7; }
+        .info { background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+        button { background: #007bff; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; margin: 5px; }
+        button:hover { background: #0056b3; }
+        iframe { width: 100%; height: 600px; border: 1px solid #ddd; border-radius: 4px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 Andalusien Trip Planner - Live Test</h1>
+        
+        <div id="app-status" class="status info">
+            <strong>App Status:</strong> Wird geprüft...
+        </div>
+
+        <div style="margin-top: 20px;">
+            <button onclick="testApp()">App testen</button>
+            <button onclick="openApp()">App in neuem Tab öffnen</button>
+            <button onclick="reloadIframe()">Iframe neu laden</button>
+            <button onclick="location.reload()">Seite neu laden</button>
+        </div>
+
+        <div style="margin-top: 20px;">
+            <h3>📱 Live App Preview:</h3>
+            <iframe id="app-iframe" src="http://localhost:5173" title="Andalusien Trip Planner"></iframe>
+        </div>
+
+        <div style="margin-top: 20px; padding: 15px; background: #f8f9fa; border-radius: 4px;">
+            <h3>📋 Test-Ergebnisse:</h3>
+            <ul id="test-results">
+                <li>⏳ Tests werden ausgeführt...</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        const results = [];
+
+        function addResult(message, type = 'info') {
+            results.push({ message, type, time: new Date().toLocaleTimeString() });
+            updateResults();
+        }
+
+        function updateResults() {
+            const list = document.getElementById('test-results');
+            list.innerHTML = results.map(r => 
+                `<li style="color: ${r.type === 'success' ? 'green' : r.type === 'error' ? 'red' : 'orange'}">
+                    [${r.time}] ${r.message}
+                </li>`
+            ).join('');
+        }
+
+        function testApp() {
+            addResult('🔍 Starte App-Test...');
+            
+            // Test 1: App erreichbar?
+            fetch('http://localhost:5173')
+                .then(response => {
+                    if (response.ok) {
+                        addResult('✅ App läuft auf localhost:5173', 'success');
+                        document.getElementById('app-status').className = 'status success';
+                        document.getElementById('app-status').innerHTML = '<strong>App Status:</strong> Läuft ✅';
+                    } else {
+                        addResult('❌ App nicht erreichbar', 'error');
+                        document.getElementById('app-status').className = 'status error';
+                        document.getElementById('app-status').innerHTML = '<strong>App Status:</strong> Fehler ❌';
+                    }
+                })
+                .catch(error => {
+                    addResult('❌ App nicht erreichbar: ' + error.message, 'error');
+                    document.getElementById('app-status').className = 'status error';
+                    document.getElementById('app-status').innerHTML = '<strong>App Status:</strong> Nicht erreichbar ❌';
+                });
+
+            addResult('🏁 Test abgeschlossen', 'success');
+        }
+
+        function openApp() {
+            window.open('http://localhost:5173', '_blank');
+            addResult('🔗 App in neuem Tab geöffnet', 'info');
+        }
+
+        function reloadIframe() {
+            const iframe = document.getElementById('app-iframe');
+            iframe.src = iframe.src;
+            addResult('🔄 Iframe neu geladen', 'info');
+        }
+
+        // Automatischer Test beim Laden
+        window.onload = function() {
+            addResult('🚀 Test-Seite geladen');
+            setTimeout(testApp, 1000);
+        };
+    </script>
+</body>
+</html> 

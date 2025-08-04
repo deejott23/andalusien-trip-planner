@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>App Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }
+        .container { max-width: 600px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .status { padding: 10px; margin: 10px 0; border-radius: 4px; }
+        .success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .warning { background: #fff3cd; color: #856404; border: 1px solid #ffeaa7; }
+        .info { background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+        button { background: #007bff; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; }
+        button:hover { background: #0056b3; }
+        .env-var { font-family: monospace; font-size: 12px; margin: 5px 0; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 Andalusien Trip Planner - Test</h1>
+        
+        <div id="app-status" class="status info">
+            <strong>App Status:</strong> Wird geprüft...
+        </div>
+
+        <div id="firebase-status" class="status warning">
+            <strong>Firebase Status:</strong> Nicht konfiguriert (Demo-Modus)
+        </div>
+
+        <div id="env-status" class="status info">
+            <strong>Environment Variables:</strong>
+            <div id="env-list">Wird geprüft...</div>
+        </div>
+
+        <div style="margin-top: 20px;">
+            <button onclick="testApp()">App testen</button>
+            <button onclick="window.open('http://localhost:5173', '_blank')">App öffnen</button>
+            <button onclick="location.reload()">Seite neu laden</button>
+        </div>
+
+        <div style="margin-top: 20px; padding: 15px; background: #f8f9fa; border-radius: 4px;">
+            <h3>📋 Test-Ergebnisse:</h3>
+            <ul id="test-results">
+                <li>⏳ Tests werden ausgeführt...</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        const results = [];
+
+        function addResult(message, type = 'info') {
+            results.push({ message, type, time: new Date().toLocaleTimeString() });
+            updateResults();
+        }
+
+        function updateResults() {
+            const list = document.getElementById('test-results');
+            list.innerHTML = results.map(r => 
+                `<li style="color: ${r.type === 'success' ? 'green' : r.type === 'error' ? 'red' : 'orange'}">
+                    [${r.time}] ${r.message}
+                </li>`
+            ).join('');
+        }
+
+        function testApp() {
+            addResult('🔍 Starte App-Test...');
+            
+            // Test 1: App erreichbar?
+            fetch('http://localhost:5173')
+                .then(response => {
+                    if (response.ok) {
+                        addResult('✅ App läuft auf localhost:5173', 'success');
+                        document.getElementById('app-status').className = 'status success';
+                        document.getElementById('app-status').innerHTML = '<strong>App Status:</strong> Läuft ✅';
+                    } else {
+                        addResult('❌ App nicht erreichbar', 'error');
+                        document.getElementById('app-status').className = 'status error';
+                        document.getElementById('app-status').innerHTML = '<strong>App Status:</strong> Fehler ❌';
+                    }
+                })
+                .catch(error => {
+                    addResult('❌ App nicht erreichbar: ' + error.message, 'error');
+                    document.getElementById('app-status').className = 'status error';
+                    document.getElementById('app-status').innerHTML = '<strong>App Status:</strong> Nicht erreichbar ❌';
+                });
+
+            // Test 2: Environment Variables
+            const envVars = [
+                'VITE_FIREBASE_API_KEY',
+                'VITE_FIREBASE_AUTH_DOMAIN', 
+                'VITE_FIREBASE_PROJECT_ID',
+                'VITE_FIREBASE_STORAGE_BUCKET',
+                'VITE_FIREBASE_MESSAGING_SENDER_ID',
+                'VITE_FIREBASE_APP_ID'
+            ];
+
+            const envList = document.getElementById('env-list');
+            const envStatus = envVars.map(varName => {
+                const value = window[varName] || 'Nicht gesetzt';
+                const status = value !== 'Nicht gesetzt' ? '✅' : '❌';
+                return `<div class="env-var">${status} ${varName}: ${value}</div>`;
+            }).join('');
+
+            envList.innerHTML = envStatus;
+
+            const configuredVars = envVars.filter(varName => window[varName]);
+            if (configuredVars.length === envVars.length) {
+                addResult('✅ Alle Firebase-Variablen konfiguriert', 'success');
+                document.getElementById('firebase-status').className = 'status success';
+                document.getElementById('firebase-status').innerHTML = '<strong>Firebase Status:</strong> Konfiguriert ✅';
+            } else {
+                addResult('⚠️ Firebase nicht vollständig konfiguriert (Demo-Modus)', 'warning');
+                document.getElementById('firebase-status').className = 'status warning';
+                document.getElementById('firebase-status').innerHTML = '<strong>Firebase Status:</strong> Demo-Modus ⚠️';
+            }
+
+            // Test 3: Port verfügbar
+            fetch('http://localhost:5173/favicon.ico')
+                .then(() => {
+                                            addResult('✅ Port 5173 ist verfügbar', 'success');
+                })
+                .catch(() => {
+                    addResult('❌ Port 5173 nicht verfügbar', 'error');
+                });
+
+            addResult('🏁 Test abgeschlossen', 'success');
+        }
+
+        // Automatischer Test beim Laden
+        window.onload = function() {
+            addResult('🚀 Test-Seite geladen');
+            setTimeout(testApp, 1000);
+        };
+    </script>
+</body>
+</html> 
