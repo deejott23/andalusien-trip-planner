@@ -213,7 +213,8 @@ export const useTripData = (tripId: string = 'andalusien-2025') => {
         loadDemoData();
         // Speichere Demo-Daten in Firebase (nur wenn Firebase verfügbar)
         if (tripService.isConnected()) {
-          tripService.saveTrip(initialTripData).catch(console.error);
+          const cleanedInitialData = cleanTripData(initialTripData);
+          tripService.saveTrip(cleanedInitialData).catch(console.error);
         }
       }
       setLoading(false);
@@ -225,11 +226,33 @@ export const useTripData = (tripId: string = 'andalusien-2025') => {
     };
   }, [tripId]);
 
+  // Funktion zum Bereinigen von undefined-Werten
+  const cleanTripData = (tripData: Trip): Trip => {
+    const cleanObject = (obj: any): any => {
+      if (obj === null || obj === undefined) return null;
+      if (typeof obj !== 'object') return obj;
+      if (Array.isArray(obj)) {
+        return obj.map(cleanObject).filter(item => item !== null);
+      }
+      const cleaned: any = {};
+      for (const [key, value] of Object.entries(obj)) {
+        const cleanedValue = cleanObject(value);
+        if (cleanedValue !== null && cleanedValue !== undefined) {
+          cleaned[key] = cleanedValue;
+        }
+      }
+      return cleaned;
+    };
+    
+    return cleanObject(tripData) as Trip;
+  };
+
   // Automatisches Speichern bei Änderungen
   useEffect(() => {
     if (trip && !loading) {
       const saveTimeout = setTimeout(() => {
-        tripService.saveTrip(trip).catch((err) => {
+        const cleanedTrip = cleanTripData(trip);
+        tripService.saveTrip(cleanedTrip).catch((err) => {
           console.error('Fehler beim automatischen Speichern:', err);
           setError('Fehler beim Speichern der Änderungen');
         });

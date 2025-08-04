@@ -10,7 +10,7 @@ import AddEntryModal from './components/AddEntryModal';
 import EditEntryModal from './components/EditEntryModal';
 import ConfirmModal from './components/ConfirmModal';
 import LoadingSpinner from './components/LoadingSpinner';
-import DebugInfo from './components/DebugInfo';
+
 import { PlusIcon } from './components/Icons';
 
 export default function App(): React.ReactNode {
@@ -144,7 +144,6 @@ export default function App(): React.ReactNode {
   if (loading) {
     return (
       <div className="min-h-screen font-sans text-slate-800">
-        <DebugInfo />
         <LoadingSpinner message="Reise wird geladen..." />
       </div>
     );
@@ -154,7 +153,6 @@ export default function App(): React.ReactNode {
   if (error) {
     return (
       <div className="min-h-screen font-sans text-slate-800">
-        <DebugInfo />
         <div className="flex items-center justify-center h-screen">
           <div className="text-center">
             <div className="text-red-500 text-6xl mb-4">⚠️</div>
@@ -175,8 +173,7 @@ export default function App(): React.ReactNode {
   // Trip nicht verfügbar - Fallback mit Demo-Daten
   if (!trip) {
     return (
-      <div className="min-h-screen font-sans text-slate-800">
-        <DebugInfo />
+      <div className="min-h-screen font-slate-800">
         <div className="flex items-center justify-center h-screen">
           <div className="text-center">
             <div className="text-yellow-500 text-6xl mb-4">⚠️</div>
@@ -196,7 +193,6 @@ export default function App(): React.ReactNode {
 
   return (
       <div className="min-h-screen font-sans text-slate-800">
-        <DebugInfo />
         <header className="sticky top-0 z-20 bg-amber-50/80 backdrop-blur-lg shadow-sm">
            <Timeline 
             stations={trip.days}
