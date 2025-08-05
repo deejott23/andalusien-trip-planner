@@ -320,7 +320,7 @@ export const useTripData = (tripId: string = 'andalusien-2025') => {
     });
   }, [trip]);
 
-  const addEntry = useCallback(async (dayId: string, type: EntryTypeEnum, data: { url?: string; content?: string; imageDataUrl?: string; attachment?: Attachment; title?: string; date?: string; }) => {
+  const addEntry = useCallback(async (dayId: string, type: EntryTypeEnum, data: { url?: string; content?: string; imageDataUrl?: string; attachment?: Attachment; title?: string; description?: string; date?: string; }) => {
     if (!trip) return;
     
     let newEntry: Entry;
@@ -386,8 +386,8 @@ export const useTripData = (tripId: string = 'andalusien-2025') => {
         id: tempId,
         type: EntryTypeEnum.LINK,
         url,
-        title: 'Lade Metadaten...',
-        description: url,
+        title: data.title || 'Lade Metadaten...',
+        description: data.description || url,
         imageUrl: data.imageDataUrl,
         domain,
         status: 'loading',
@@ -432,8 +432,8 @@ export const useTripData = (tripId: string = 'andalusien-2025') => {
         const metadata = await fetchUrlMetadata(url);
         const finalEntry: LinkEntry = {
           ...loadingEntry,
-          title: metadata.title || url,
-          description: metadata.description || '',
+          title: data.title || metadata.title || url,
+          description: data.description || metadata.description || '',
           imageUrl: data.imageDataUrl || metadata.imageUrl,
           status: 'loaded',
         };
@@ -442,8 +442,8 @@ export const useTripData = (tripId: string = 'andalusien-2025') => {
         console.error("Metadaten konnten nicht geladen werden:", error);
         const errorEntry: LinkEntry = {
           ...loadingEntry,
-          title: "Vorschau fehlgeschlagen",
-          description: url,
+          title: data.title || "Vorschau fehlgeschlagen",
+          description: data.description || url,
           status: 'error',
           imageUrl: data.imageDataUrl,
         };

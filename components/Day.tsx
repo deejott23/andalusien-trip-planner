@@ -2,6 +2,25 @@ import React, { useState } from 'react';
 import type { Day as DayType, Entry } from '../types';
 import EntryCard from './EntryCard';
 import { PlusIcon, TrashIcon, EditIcon, ArrowUpIcon, ArrowDownIcon } from './Icons';
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import {
+  useSortable,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 
 interface DayProps {
   day: DayType;
@@ -25,10 +44,74 @@ const colorMapping: { [key: string]: string } = {
   gray: 'border-gray-400',
 };
 
+// Sortable Entry Card Component
+const SortableEntryCard: React.FC<{
+  entry: Entry;
+  entryIndex: number;
+  totalEntries: number;
+  onDelete: () => void;
+  onEdit: () => void;
+  onMove: (direction: number) => void;
+  onUpdateReaction: (reaction: 'like' | 'dislike') => void;
+  setEntryRef: (entryId: string, el: HTMLElement | null) => void;
+}> = ({ entry, entryIndex, totalEntries, onDelete, onEdit, onMove, onUpdateReaction, setEntryRef }) => {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: entry.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  return (
+    <div ref={setNodeRef} style={style}>
+      <EntryCard
+        entry={entry}
+        entryIndex={entryIndex}
+        totalEntries={totalEntries}
+        onDelete={onDelete}
+        onEdit={onEdit}
+        onMove={onMove}
+        onUpdateReaction={onUpdateReaction}
+        setEntryRef={setEntryRef}
+        dragAttributes={attributes}
+        dragListeners={listeners}
+      />
+    </div>
+  );
+};
+
 const Day: React.FC<DayProps> = (props) => {
   const { day, dayIndex, totalDays, onMoveDay, onAddEntry, onDeleteDay, onUpdateDayTitle, onDeleteEntry, onEditEntry, onMoveEntry, onUpdateEntryReaction, setEntryRef } = props;
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [title, setTitle] = useState(day.title);
+  
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (active.id !== over?.id) {
+      const oldIndex = day.entries.findIndex(entry => entry.id === active.id);
+      const newIndex = day.entries.findIndex(entry => entry.id === over?.id);
+      
+      if (oldIndex !== -1 && newIndex !== -1) {
+        onMoveEntry(day.id, oldIndex, newIndex);
+      }
+    }
+  };
   
   const borderColorClass = colorMapping[day.color] || colorMapping.gray;
 
@@ -116,19 +199,30 @@ const Day: React.FC<DayProps> = (props) => {
       </div>
       
       <div className="space-y-4 pt-4 border-t border-slate-100">
-        {day.entries.map((entry, index) => (
-          <EntryCard
-              key={entry.id}
-              entry={entry}
-              entryIndex={index}
-              totalEntries={day.entries.length}
-              onDelete={() => onDeleteEntry(entry.id)}
-              onEdit={() => onEditEntry(entry)}
-              onMove={(direction) => onMoveEntry(day.id, index, index + direction)}
-              onUpdateReaction={(reaction) => onUpdateEntryReaction(day.id, entry.id, reaction)}
-              setEntryRef={setEntryRef}
-          />
-        ))}
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragEnd={handleDragEnd}
+        >
+          <SortableContext
+            items={day.entries.map(entry => entry.id)}
+            strategy={verticalListSortingStrategy}
+          >
+            {day.entries.map((entry, index) => (
+              <SortableEntryCard
+                key={entry.id}
+                entry={entry}
+                entryIndex={index}
+                totalEntries={day.entries.length}
+                onDelete={() => onDeleteEntry(entry.id)}
+                onEdit={() => onEditEntry(entry)}
+                onMove={(direction) => onMoveEntry(day.id, index, index + direction)}
+                onUpdateReaction={(reaction) => onUpdateEntryReaction(day.id, entry.id, reaction)}
+                setEntryRef={setEntryRef}
+              />
+            ))}
+          </SortableContext>
+        </DndContext>
         
         {/* Prominente Plus-Schaltfläche - immer sichtbar */}
         <div className="flex justify-center pt-4">

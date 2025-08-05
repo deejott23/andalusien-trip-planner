@@ -4,6 +4,13 @@ import { EntryTypeEnum } from '../types';
 import { TrashIcon, LinkIcon, FileTextIcon, EditIcon, PaperclipIcon, ArrowUpIcon, ArrowDownIcon, ThumbsUpIcon, ThumbsDownIcon, MoreHorizontalIcon } from './Icons';
 import Spinner from './Spinner';
 
+// Drag Handle Icon
+const DragHandleIcon: React.FC<{ className?: string }> = ({ className = 'w-4 h-4' }) => (
+  <svg className={className} fill="currentColor" viewBox="0 0 20 20">
+    <path d="M7 2a2 2 0 1 1 .001 4.001A2 2 0 0 1 7 2zm0 6a2 2 0 1 1 .001 4.001A2 2 0 0 1 7 8zm0 6a2 2 0 1 1 .001 4.001A2 2 0 0 1 7 14zm6-8a2 2 0 1 1-.001-4.001A2 2 0 0 1 13 6zm0 2a2 2 0 1 1 .001 4.001A2 2 0 0 1 13 8zm0 6a2 2 0 1 1 .001 4.001A2 2 0 0 1 13 14z" />
+  </svg>
+);
+
 interface EntryCardProps {
   entry: Entry;
   entryIndex: number;
@@ -13,6 +20,8 @@ interface EntryCardProps {
   onMove: (direction: number) => void;
   onUpdateReaction: (reaction: 'like' | 'dislike') => void;
   setEntryRef: (entryId: string, el: HTMLElement | null) => void;
+  dragAttributes?: any;
+  dragListeners?: any;
 }
 
 const CardMenu: React.FC<{
@@ -37,7 +46,7 @@ const CardMenu: React.FC<{
     );
 
     return (
-        <div ref={menuRef} className="absolute top-9 right-2 w-48 bg-white rounded-md shadow-lg border border-slate-200 z-10 py-1">
+        <div ref={menuRef} className="absolute top-9 right-2 w-48 bg-white rounded-md shadow-lg border border-slate-200 z-40 py-1">
             <MenuItem onClick={() => onMove(-1)} disabled={index === 0}>
                 <ArrowUpIcon className="w-4 h-4" /> Nach oben
             </MenuItem>
@@ -107,7 +116,17 @@ const useCardMenu = () => {
     return { isMenuOpen, setIsMenuOpen, menuRef, triggerRef };
 };
 
-const LinkCard: React.FC<{ entry: LinkEntry; onDelete: () => void; onEdit: () => void; onMove: (d:number)=>void; onUpdateReaction: (reaction: 'like' | 'dislike') => void; index: number; total: number; }> = ({ entry, onDelete, onEdit, onMove, onUpdateReaction, index, total }) => {
+const LinkCard: React.FC<{ 
+  entry: LinkEntry; 
+  onDelete: () => void; 
+  onEdit: () => void; 
+  onMove: (d:number)=>void; 
+  onUpdateReaction: (reaction: 'like' | 'dislike') => void; 
+  index: number; 
+  total: number;
+  dragAttributes?: any;
+  dragListeners?: any;
+}> = ({ entry, onDelete, onEdit, onMove, onUpdateReaction, index, total, dragAttributes, dragListeners }) => {
   const [imageLoadError, setImageLoadError] = useState(false);
   const { isMenuOpen, setIsMenuOpen, menuRef, triggerRef } = useCardMenu();
   useEffect(() => { setImageLoadError(false); }, [entry.imageUrl]);
@@ -166,9 +185,41 @@ const LinkCard: React.FC<{ entry: LinkEntry; onDelete: () => void; onEdit: () =>
   
   return (
     <div className="relative group bg-white border border-slate-200 rounded-lg shadow-sm transition-shadow hover:shadow-md flex flex-col">
-        <button ref={triggerRef} onClick={() => setIsMenuOpen(prev => !prev)} className="absolute top-2 right-2 p-1 rounded-full text-slate-500 hover:bg-slate-100 opacity-0 group-hover:opacity-100 transition-opacity z-20">
-            <MoreHorizontalIcon className="w-5 h-5" />
-        </button>
+        <div className="absolute top-2 right-2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-30">
+            <button 
+              onClick={(e) => {
+                e.stopPropagation();
+                onEdit();
+              }} 
+              className="p-1 rounded-full text-blue-500 hover:bg-blue-100 transition-colors cursor-pointer"
+              title="Bearbeiten"
+            >
+                <EditIcon className="w-4 h-4" />
+            </button>
+            <button 
+              onClick={(e) => {
+                e.stopPropagation();
+                onDelete();
+              }} 
+              className="p-1 rounded-full text-red-500 hover:bg-red-100 transition-colors cursor-pointer"
+              title="Löschen"
+            >
+                <TrashIcon className="w-4 h-4" />
+            </button>
+            <button 
+              ref={triggerRef} 
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsMenuOpen(prev => !prev);
+              }} 
+              className="p-1 rounded-full text-slate-500 hover:bg-slate-100 transition-colors cursor-grab active:cursor-grabbing"
+              {...dragAttributes}
+              {...dragListeners}
+              title="Weitere Optionen"
+            >
+                <MoreHorizontalIcon className="w-4 h-4" />
+            </button>
+        </div>
         <CardMenu isOpen={isMenuOpen} menuRef={menuRef} onEdit={onEdit} onDelete={onDelete} onMove={onMove} index={index} total={total} />
         <CardContent/>
         <div className="px-4 pb-2">
@@ -178,13 +229,55 @@ const LinkCard: React.FC<{ entry: LinkEntry; onDelete: () => void; onEdit: () =>
   );
 };
 
-const NoteCard: React.FC<{ entry: NoteEntry; onDelete: () => void; onEdit: () => void; onMove: (d:number)=>void; onUpdateReaction: (reaction: 'like' | 'dislike') => void; index: number; total: number; }> = ({ entry, onDelete, onEdit, onMove, onUpdateReaction, index, total }) => {
+const NoteCard: React.FC<{ 
+  entry: NoteEntry; 
+  onDelete: () => void; 
+  onEdit: () => void; 
+  onMove: (d:number)=>void; 
+  onUpdateReaction: (reaction: 'like' | 'dislike') => void; 
+  index: number; 
+  total: number;
+  dragAttributes?: any;
+  dragListeners?: any;
+}> = ({ entry, onDelete, onEdit, onMove, onUpdateReaction, index, total, dragAttributes, dragListeners }) => {
   const { isMenuOpen, setIsMenuOpen, menuRef, triggerRef } = useCardMenu();
   return (
     <div className="relative group bg-amber-50 border border-amber-200 rounded-lg flex flex-col">
-       <button ref={triggerRef} onClick={() => setIsMenuOpen(prev => !prev)} className="absolute top-2 right-2 p-1 rounded-full text-slate-500 hover:bg-slate-100 opacity-0 group-hover:opacity-100 transition-opacity z-20">
-            <MoreHorizontalIcon className="w-5 h-5" />
-       </button>
+       <div className="absolute top-2 right-2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-30">
+           <button 
+             onClick={(e) => {
+               e.stopPropagation();
+               onEdit();
+             }} 
+             className="p-1 rounded-full text-blue-500 hover:bg-blue-100 transition-colors cursor-pointer"
+             title="Bearbeiten"
+           >
+               <EditIcon className="w-4 h-4" />
+           </button>
+           <button 
+             onClick={(e) => {
+               e.stopPropagation();
+               onDelete();
+             }} 
+             className="p-1 rounded-full text-red-500 hover:bg-red-100 transition-colors cursor-pointer"
+             title="Löschen"
+           >
+               <TrashIcon className="w-4 h-4" />
+           </button>
+           <button 
+             ref={triggerRef} 
+             onClick={(e) => {
+               e.stopPropagation();
+               setIsMenuOpen(prev => !prev);
+             }} 
+             className="p-1 rounded-full text-slate-500 hover:bg-slate-100 transition-colors cursor-grab active:cursor-grabbing"
+             {...dragAttributes}
+             {...dragListeners}
+             title="Weitere Optionen"
+           >
+               <MoreHorizontalIcon className="w-4 h-4" />
+           </button>
+       </div>
        <CardMenu isOpen={isMenuOpen} menuRef={menuRef} onEdit={onEdit} onDelete={onDelete} onMove={onMove} index={index} total={total} />
 
       <div className="p-4">
@@ -206,7 +299,16 @@ const NoteCard: React.FC<{ entry: NoteEntry; onDelete: () => void; onEdit: () =>
   );
 };
 
-const DaySeparatorCard: React.FC<{ entry: DaySeparatorEntry; onDelete: () => void; onEdit: () => void; onMove: (d:number)=>void; index: number; total: number; }> = ({ entry, onDelete, onEdit, onMove, index, total }) => {
+const DaySeparatorCard: React.FC<{ 
+  entry: DaySeparatorEntry; 
+  onDelete: () => void; 
+  onEdit: () => void; 
+  onMove: (d:number)=>void; 
+  index: number; 
+  total: number;
+  dragAttributes?: any;
+  dragListeners?: any;
+}> = ({ entry, onDelete, onEdit, onMove, index, total, dragAttributes, dragListeners }) => {
     const { isMenuOpen, setIsMenuOpen, menuRef, triggerRef } = useCardMenu();
     const date = new Date(entry.date + 'T00:00:00');
     const day = date.toLocaleDateString('de-DE', { day: 'numeric' });
@@ -214,9 +316,41 @@ const DaySeparatorCard: React.FC<{ entry: DaySeparatorEntry; onDelete: () => voi
 
     return (
         <div className="relative group flex items-center gap-4 py-2 my-4">
-             <button ref={triggerRef} onClick={() => setIsMenuOpen(prev => !prev)} className="absolute top-1/2 right-0 -translate-y-1/2 p-1 rounded-full text-slate-500 hover:bg-slate-100 opacity-0 group-hover:opacity-100 transition-opacity z-20">
-                <MoreHorizontalIcon className="w-5 h-5" />
-            </button>
+             <div className="absolute top-1/2 right-0 -translate-y-1/2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-30">
+                 <button 
+                   onClick={(e) => {
+                     e.stopPropagation();
+                     onEdit();
+                   }} 
+                   className="p-1 rounded-full text-blue-500 hover:bg-blue-100 transition-colors cursor-pointer"
+                   title="Bearbeiten"
+                 >
+                     <EditIcon className="w-4 h-4" />
+                 </button>
+                 <button 
+                   onClick={(e) => {
+                     e.stopPropagation();
+                     onDelete();
+                   }} 
+                   className="p-1 rounded-full text-red-500 hover:bg-red-100 transition-colors cursor-pointer"
+                   title="Löschen"
+                 >
+                     <TrashIcon className="w-4 h-4" />
+                 </button>
+                 <button 
+                   ref={triggerRef} 
+                   onClick={(e) => {
+                     e.stopPropagation();
+                     setIsMenuOpen(prev => !prev);
+                   }} 
+                   className="p-1 rounded-full text-slate-500 hover:bg-slate-100 transition-colors cursor-grab active:cursor-grabbing"
+                   {...dragAttributes}
+                   {...dragListeners}
+                   title="Weitere Optionen"
+                 >
+                     <MoreHorizontalIcon className="w-4 h-4" />
+                 </button>
+             </div>
             <CardMenu isOpen={isMenuOpen} menuRef={menuRef} onEdit={onEdit} onDelete={onDelete} onMove={onMove} index={index} total={total} />
 
             <div className="flex flex-col items-center justify-center self-stretch">
@@ -233,7 +367,7 @@ const DaySeparatorCard: React.FC<{ entry: DaySeparatorEntry; onDelete: () => voi
     )
 };
 
-const EntryCard: React.FC<EntryCardProps> = ({ entry, entryIndex, totalEntries, onMove, setEntryRef, onUpdateReaction, ...props }) => {
+const EntryCard: React.FC<EntryCardProps> = ({ entry, entryIndex, totalEntries, onMove, setEntryRef, onUpdateReaction, dragAttributes, dragListeners, ...props }) => {
   const ref = React.useRef<HTMLDivElement>(null);
   
   useEffect(() => {
@@ -248,12 +382,14 @@ const EntryCard: React.FC<EntryCardProps> = ({ entry, entryIndex, totalEntries, 
       index: entryIndex,
       total: totalEntries,
       onMove,
-      onUpdateReaction
+      onUpdateReaction,
+      dragAttributes,
+      dragListeners
   };
 
   return (
     <div ref={ref} id={entry.id} className="scroll-mt-40" data-entry-type={entry.type}>
-        {entry.type === EntryTypeEnum.DAY_SEPARATOR && <DaySeparatorCard entry={entry} onEdit={props.onEdit} onDelete={props.onDelete} onMove={onMove} index={entryIndex} total={totalEntries}/>}
+        {entry.type === EntryTypeEnum.DAY_SEPARATOR && <DaySeparatorCard entry={entry} onEdit={props.onEdit} onDelete={props.onDelete} onMove={onMove} index={entryIndex} total={totalEntries} dragAttributes={dragAttributes} dragListeners={dragListeners}/>}
         {entry.type === EntryTypeEnum.LINK && <LinkCard entry={entry} {...commonProps} />}
         {entry.type === EntryTypeEnum.NOTE && <NoteCard entry={entry} {...commonProps} />}
     </div>

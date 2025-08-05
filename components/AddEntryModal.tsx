@@ -16,6 +16,8 @@ interface AddEntryModalProps {
 const AddEntryModal: React.FC<AddEntryModalProps> = ({ isOpen, onClose, onAddEntry, station, tripStartDate, allDays }) => {
   const [activeTab, setActiveTab] = useState<EntryTypeEnum>(EntryTypeEnum.LINK);
   const [url, setUrl] = useState('');
+  const [linkTitle, setLinkTitle] = useState('');
+  const [linkDescription, setLinkDescription] = useState('');
   const [note, setNote] = useState('');
   const [imageDataUrl, setImageDataUrl] = useState<string | null>(null);
   const [attachment, setAttachment] = useState<Attachment | null>(null);
@@ -31,6 +33,8 @@ const AddEntryModal: React.FC<AddEntryModalProps> = ({ isOpen, onClose, onAddEnt
     if (isOpen) {
       // Reset state
       setUrl('');
+      setLinkTitle('');
+      setLinkDescription('');
       setNote('');
       setImageDataUrl(null);
       setAttachment(null);
@@ -106,7 +110,12 @@ const AddEntryModal: React.FC<AddEntryModalProps> = ({ isOpen, onClose, onAddEnt
     const isNoteEmpty = !note || note.replace(/(<p><br><\/p>|\s)/g, '').length === 0;
 
     if (activeTab === EntryTypeEnum.LINK && url.trim()) {
-      await onAddEntry(EntryTypeEnum.LINK, { url: url.trim(), imageDataUrl: imageDataUrl || undefined });
+      await onAddEntry(EntryTypeEnum.LINK, { 
+        url: url.trim(), 
+        title: linkTitle.trim() || undefined,
+        description: linkDescription.trim() || undefined,
+        imageDataUrl: imageDataUrl || undefined 
+      });
     } else if (activeTab === EntryTypeEnum.NOTE && !isNoteEmpty) {
       await onAddEntry(EntryTypeEnum.NOTE, { content: note, attachment: attachment || undefined });
     } else if (activeTab === EntryTypeEnum.DAY_SEPARATOR && daySeparatorTitle.trim() && daySeparatorDate) {
@@ -141,7 +150,59 @@ const AddEntryModal: React.FC<AddEntryModalProps> = ({ isOpen, onClose, onAddEnt
           <div className="p-6 space-y-4 max-h-[60vh] overflow-y-auto">
             {activeTab === EntryTypeEnum.LINK && (
                 // Link form
-                <><input type="file" ref={linkFileInputRef} onChange={handleLinkFileChange} accept="image/*" className="hidden" /><div><label htmlFor="url" className="block text-sm font-medium text-slate-700 mb-1">Webseiten-URL</label><input id="url" type="url" value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://example.com" className="w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500" autoFocus /></div><div><span className="block text-sm font-medium text-slate-700 mb-1">Eigenes Bild (Optional)</span>{imageDataUrl ? (<div className="relative"><img src={imageDataUrl} alt="Vorschau" className="w-full h-auto object-cover rounded-md" /><button type="button" onClick={() => setImageDataUrl(null)} className="absolute top-2 right-2 p-1.5 bg-black/50 text-white rounded-full hover:bg-black/70"><XIcon className="w-4 h-4" /></button></div>) : (<button type="button" onClick={() => linkFileInputRef.current?.click()} className="w-full flex flex-col items-center justify-center gap-2 py-4 border-2 border-dashed border-slate-300 rounded-lg text-slate-500 hover:bg-slate-100 hover:border-slate-400 transition-all"><UploadCloudIcon className="w-6 h-6" /><span className="text-sm">Bild hochladen</span></button>)}</div></>
+                <>
+                  <input type="file" ref={linkFileInputRef} onChange={handleLinkFileChange} accept="image/*" className="hidden" />
+                  <div>
+                    <label htmlFor="url" className="block text-sm font-medium text-slate-700 mb-1">Webseiten-URL</label>
+                    <input 
+                      id="url" 
+                      type="url" 
+                      value={url} 
+                      onChange={(e) => setUrl(e.target.value)} 
+                      placeholder="https://example.com" 
+                      className="w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500" 
+                      autoFocus 
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="linkTitle" className="block text-sm font-medium text-slate-700 mb-1">Titel (Optional)</label>
+                    <input 
+                      id="linkTitle" 
+                      type="text" 
+                      value={linkTitle} 
+                      onChange={(e) => setLinkTitle(e.target.value)} 
+                      placeholder="z.B. Offizielle Tourismusseite von Cádiz" 
+                      className="w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500" 
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="linkDescription" className="block text-sm font-medium text-slate-700 mb-1">Beschreibung (Optional)</label>
+                    <textarea 
+                      id="linkDescription" 
+                      value={linkDescription} 
+                      onChange={(e) => setLinkDescription(e.target.value)} 
+                      placeholder="z.B. Informationen zu Sehenswürdigkeiten, Restaurants und Aktivitäten" 
+                      rows={3}
+                      className="w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 resize-none" 
+                    />
+                  </div>
+                  <div>
+                    <span className="block text-sm font-medium text-slate-700 mb-1">Eigenes Bild (Optional)</span>
+                    {imageDataUrl ? (
+                      <div className="relative">
+                        <img src={imageDataUrl} alt="Vorschau" className="w-full h-auto object-cover rounded-md" />
+                        <button type="button" onClick={() => setImageDataUrl(null)} className="absolute top-2 right-2 p-1.5 bg-black/50 text-white rounded-full hover:bg-black/70">
+                          <XIcon className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ) : (
+                      <button type="button" onClick={() => linkFileInputRef.current?.click()} className="w-full flex flex-col items-center justify-center gap-2 py-4 border-2 border-dashed border-slate-300 rounded-lg text-slate-500 hover:bg-slate-100 hover:border-slate-400 transition-all">
+                        <UploadCloudIcon className="w-6 h-6" />
+                        <span className="text-sm">Bild hochladen</span>
+                      </button>
+                    )}
+                  </div>
+                </>
             )}
             {activeTab === EntryTypeEnum.NOTE && (
                 // Note form
