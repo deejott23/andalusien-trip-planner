@@ -13,15 +13,17 @@ interface EditEntryModalProps {
 }
 
 const EditEntryModal: React.FC<EditEntryModalProps> = ({ isOpen, onClose, onUpdateEntry, entry }) => {
-  const [formData, setFormData] = useState<Entry | null>(entry);
+  const [formData, setFormData] = useState<Entry | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const noteFileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    setFormData(entry);
-  }, [entry]);
+    if (entry && isOpen) {
+      setFormData(entry);
+    }
+  }, [entry, isOpen]);
 
-  if (!isOpen || !formData) return null;
+  if (!isOpen) return null;
 
   const handleNoteContentChange = (content: string) => {
     if (formData.type === EntryTypeEnum.NOTE) {
@@ -37,9 +39,24 @@ const EditEntryModal: React.FC<EditEntryModalProps> = ({ isOpen, onClose, onUpda
   const handleLinkFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file && formData?.type === EntryTypeEnum.LINK) {
+      // Prüfe Dateigröße (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        alert('Datei ist zu groß. Maximale Größe: 5MB');
+        return;
+      }
+      
+      // Prüfe Dateityp
+      if (!file.type.startsWith('image/')) {
+        alert('Bitte wähle nur Bilddateien aus.');
+        return;
+      }
+      
       const reader = new FileReader();
       reader.onloadend = () => {
         setFormData({ ...formData, imageUrl: reader.result as string });
+      };
+      reader.onerror = () => {
+        alert('Fehler beim Lesen der Datei. Versuche eine andere Datei.');
       };
       reader.readAsDataURL(file);
     }
@@ -54,6 +71,12 @@ const EditEntryModal: React.FC<EditEntryModalProps> = ({ isOpen, onClose, onUpda
   const handleNoteFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file && formData?.type === EntryTypeEnum.NOTE) {
+      // Prüfe Dateigröße (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        alert('Datei ist zu groß. Maximale Größe: 5MB');
+        return;
+      }
+      
       const reader = new FileReader();
       reader.onloadend = () => {
         const newAttachment: Attachment = {
@@ -62,6 +85,9 @@ const EditEntryModal: React.FC<EditEntryModalProps> = ({ isOpen, onClose, onUpda
             mimeType: file.type
         };
         setFormData({ ...formData, attachment: newAttachment });
+      };
+      reader.onerror = () => {
+        alert('Fehler beim Lesen der Datei. Versuche eine andere Datei.');
       };
       reader.readAsDataURL(file);
     }
@@ -100,7 +126,7 @@ const EditEntryModal: React.FC<EditEntryModalProps> = ({ isOpen, onClose, onUpda
         </div>
         <form onSubmit={handleSubmit} className="flex-grow contents">
           <div className="p-6 space-y-4 overflow-y-auto max-h-[70vh]">
-            {formData.type === EntryTypeEnum.LINK && (
+            {formData && formData.type === EntryTypeEnum.LINK && (
               <>
                 <div>
                   <label htmlFor="title" className={formLabelClass}>Titel</label>
@@ -134,7 +160,7 @@ const EditEntryModal: React.FC<EditEntryModalProps> = ({ isOpen, onClose, onUpda
                 </div>
               </>
             )}
-            {formData.type === EntryTypeEnum.NOTE && (
+            {formData && formData.type === EntryTypeEnum.NOTE && (
               <>
                 <div>
                   <label className={formLabelClass}>Notiz</label>

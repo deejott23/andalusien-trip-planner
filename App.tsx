@@ -8,6 +8,7 @@ import Day from './components/Day';
 import AddDayModal from './components/AddDayModal';
 import AddEntryModal from './components/AddEntryModal';
 import EditEntryModal from './components/EditEntryModal';
+import EditDaySeparatorModal from './components/EditDaySeparatorModal';
 import ConfirmModal from './components/ConfirmModal';
 import LoadingSpinner from './components/LoadingSpinner';
 
@@ -32,6 +33,7 @@ export default function App(): React.ReactNode {
   const [isAddDayModalOpen, setAddDayModalOpen] = useState(false);
   const [addEntryModalState, setAddEntryModalState] = useState<{ isOpen: boolean; dayId: string | null }>({ isOpen: false, dayId: null });
   const [editEntryModalState, setEditEntryModalState] = useState<{ isOpen: boolean; dayId: string | null; entry: Entry | null }>({ isOpen: false, dayId: null, entry: null });
+  const [editDaySeparatorModalState, setEditDaySeparatorModalState] = useState<{ isOpen: boolean; entry: DaySeparatorEntry | null }>({ isOpen: false, entry: null });
   const [confirmModalState, setConfirmModalState] = useState<{ isOpen: boolean; title: string; message: string; onConfirm: () => void }>({ isOpen: false, title: '', message: '', onConfirm: () => {} });
   
   const [activeDayEntryId, setActiveDayEntryId] = useState<string | null>(null);
@@ -69,6 +71,14 @@ export default function App(): React.ReactNode {
     setEditEntryModalState({ isOpen: false, dayId: null, entry: null });
   }, []);
 
+  const openEditDaySeparatorModal = useCallback((entry: DaySeparatorEntry) => {
+    setEditDaySeparatorModalState({ isOpen: true, entry });
+  }, []);
+
+  const closeEditDaySeparatorModal = useCallback(() => {
+    setEditDaySeparatorModalState({ isOpen: false, entry: null });
+  }, []);
+
   const handleAddDay = useCallback((title: string) => {
     addDay(title);
     setAddDayModalOpen(false);
@@ -80,6 +90,20 @@ export default function App(): React.ReactNode {
     }
     closeEditEntryModal();
   }, [editEntryModalState.dayId, updateEntry, closeEditEntryModal]);
+
+  const handleUpdateDaySeparatorEntry = useCallback((updatedEntry: DaySeparatorEntry) => {
+    // Finde den Day, der diesen Entry enthält
+    if (trip) {
+      for (const day of trip.days) {
+        const entryIndex = day.entries.findIndex(e => e.id === updatedEntry.id);
+        if (entryIndex !== -1) {
+          updateEntry(day.id, updatedEntry);
+          break;
+        }
+      }
+    }
+    closeEditDaySeparatorModal();
+  }, [trip, updateEntry, closeEditDaySeparatorModal]);
 
   const handleConfirmDeleteDay = useCallback((dayId: string) => {
     setConfirmModalState({
@@ -215,7 +239,13 @@ export default function App(): React.ReactNode {
                         onDeleteDay={() => handleConfirmDeleteDay(day.id)}
                         onUpdateDayTitle={(newTitle) => updateDay(day.id, { title: newTitle })}
                         onDeleteEntry={(entryId) => handleConfirmDeleteEntry(entryId)}
-                        onEditEntry={(entry) => openEditEntryModal(day.id, entry)}
+                        onEditEntry={(entry) => {
+                          if (entry.type === EntryTypeEnum.DAY_SEPARATOR) {
+                            openEditDaySeparatorModal(entry as DaySeparatorEntry);
+                          } else {
+                            openEditEntryModal(day.id, entry);
+                          }
+                        }}
                         onMoveEntry={moveEntry}
                         onUpdateEntryReaction={updateEntryReaction}
                         setEntryRef={(entryId, el) => {
@@ -260,11 +290,19 @@ export default function App(): React.ReactNode {
           allDays={trip.days}
         />
 
-        <EditEntryModal
+                <EditEntryModal
           isOpen={editEntryModalState.isOpen}
           onClose={closeEditEntryModal}
           entry={editEntryModalState.entry}
           onUpdateEntry={handleUpdateEntry}
+        />
+
+        <EditDaySeparatorModal
+          isOpen={editDaySeparatorModalState.isOpen}
+          onClose={closeEditDaySeparatorModal}
+          entry={editDaySeparatorModalState.entry}
+          onUpdateEntry={handleUpdateDaySeparatorEntry}
+          trip={trip}
         />
 
         <ConfirmModal
@@ -275,5 +313,5 @@ export default function App(): React.ReactNode {
           onConfirm={confirmModalState.onConfirm}
         />
       </div>
-  );
-}
+    );
+  }

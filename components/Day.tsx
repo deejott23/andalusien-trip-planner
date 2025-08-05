@@ -69,13 +69,6 @@ const Day: React.FC<DayProps> = (props) => {
             <ArrowDownIcon className="w-5 h-5" />
         </button>
         <button
-            onClick={onAddEntry}
-            className="p-2 text-slate-400 hover:text-blue-500 hover:bg-blue-50 rounded-full transition-colors"
-            aria-label="Eintrag hinzufügen"
-        >
-            <PlusIcon className="w-5 h-5" />
-        </button>
-        <button
             onClick={onDeleteDay}
             className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors"
             aria-label="Station löschen"
@@ -111,6 +104,13 @@ const Day: React.FC<DayProps> = (props) => {
                 >
                     <EditIcon className="w-5 h-5" />
                 </button>
+                 <button
+                    onClick={onAddEntry}
+                    className="p-2 text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-full transition-colors opacity-0 group-hover:opacity-100"
+                    aria-label="Eintrag hinzufügen"
+                >
+                    <PlusIcon className="w-4 h-4" />
+                </button>
              </div>
           )}
       </div>
@@ -129,6 +129,18 @@ const Day: React.FC<DayProps> = (props) => {
               setEntryRef={setEntryRef}
           />
         ))}
+        
+        {/* Prominente Plus-Schaltfläche - immer sichtbar */}
+        <div className="flex justify-center pt-4">
+          <button
+            onClick={onAddEntry}
+            className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white font-semibold rounded-full shadow-lg hover:bg-blue-700 hover:shadow-xl transition-all duration-200 transform hover:scale-105"
+            aria-label="Neuen Eintrag hinzufügen"
+          >
+            <PlusIcon className="w-5 h-5" />
+            <span>Eintrag hinzufügen</span>
+          </button>
+        </div>
       </div>
     </section>
   );
