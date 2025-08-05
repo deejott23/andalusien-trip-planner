@@ -39,31 +39,41 @@ const AddEntryModal: React.FC<AddEntryModalProps> = ({ isOpen, onClose, onAddEnt
       setActiveTab(EntryTypeEnum.LINK);
       setIsSubmitting(false);
 
-      // Calculate available dates for the station, excluding already used ones
+      // Calculate available dates for the station based on fixed time ranges
       if(station) {
-        let stationStartDate = new Date(tripStartDate + 'T00:00:00');
-        for(const s of allDays) {
-          if(s.id === station.id) break;
-          stationStartDate.setDate(stationStartDate.getDate() + s.duration);
-        }
-
-        const allStationDates = [];
-        for(let i=0; i < station.duration; i++) {
-          const date = new Date(stationStartDate);
-          date.setDate(date.getDate() + i);
-          allStationDates.push(date.toISOString().split('T')[0]);
-        }
+        // Feste Zeiträume für jede Station
+        const stationRanges = {
+          'station-cadiz': { start: { day: 27, month: 8 }, end: { day: 31, month: 8 } },
+          'station-marbella': { start: { day: 31, month: 8 }, end: { day: 4, month: 9 } },
+          'station-torox': { start: { day: 4, month: 9 }, end: { day: 11, month: 9 } }
+        };
         
-        const existingSeparatorDates = station.entries
-            .filter((e): e is DaySeparatorEntry => e.type === EntryTypeEnum.DAY_SEPARATOR)
-            .map(e => e.date);
-            
-        const filteredDates = allStationDates.filter(d => !existingSeparatorDates.includes(d));
+        const range = stationRanges[station.id];
+        if (range) {
+          const allStationDates = [];
+          const startDate = new Date(2025, range.start.month - 1, range.start.day);
+          const endDate = new Date(2025, range.end.month - 1, range.end.day);
+          
+          // Generiere alle Daten im Zeitraum
+          for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
+            allStationDates.push(d.toISOString().split('T')[0]);
+          }
+          
+          const existingSeparatorDates = station.entries
+              .filter((e): e is DaySeparatorEntry => e.type === EntryTypeEnum.DAY_SEPARATOR)
+              .map(e => e.date);
+              
+          const filteredDates = allStationDates.filter(d => !existingSeparatorDates.includes(d));
 
-        setAvailableDates(filteredDates);
-        if(filteredDates.length > 0) {
-          setDaySeparatorDate(filteredDates[0]);
+          setAvailableDates(filteredDates);
+          if(filteredDates.length > 0) {
+            setDaySeparatorDate(filteredDates[0]);
+          } else {
+            setDaySeparatorDate('');
+          }
         } else {
+          // Fallback für "Vor dem Urlaub" - keine Tageseinträge erlaubt
+          setAvailableDates([]);
           setDaySeparatorDate('');
         }
       }

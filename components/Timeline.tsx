@@ -39,22 +39,58 @@ const Timeline: React.FC<TimelineProps> = ({ stations, activeDayEntryId, onDayCl
 
   // --- DATA PREPARATION ---
 
-  const daySeparatorEntries = useMemo(() => stations.flatMap(station =>
-    station.entries
-      .filter((e): e is DaySeparatorEntry => e.type === EntryTypeEnum.DAY_SEPARATOR)
-      .map(e => ({ ...e, stationColor: station.color, stationTitle: station.title }))
-  ).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()), [stations]);
+  // Erstelle Timeline-Einträge für alle Stationen
+  const timelineEntries = useMemo(() => {
+    const entries = [];
+    
+    for (const station of stations) {
+      // Spezielle Behandlung für "Vor dem Urlaub" - kein Tageseintrag
+      if (station.title === 'Vor dem Urlaub') {
+        entries.push({
+          id: `virtual-${station.id}`,
+          type: EntryTypeEnum.DAY_SEPARATOR,
+          title: station.title,
+          date: new Date().toISOString().split('T')[0], // Heute als Fallback
+          stationColor: station.color,
+          stationTitle: station.title
+        });
+        continue;
+      }
+      
+      // Suche nach DAY_SEPARATOR Einträgen
+      const separatorEntries = station.entries
+        .filter((e): e is DaySeparatorEntry => e.type === EntryTypeEnum.DAY_SEPARATOR)
+        .map(e => ({ ...e, stationColor: station.color, stationTitle: station.title }));
+      
+      if (separatorEntries.length > 0) {
+        // Füge alle Tageseinträge hinzu
+        entries.push(...separatorEntries);
+      } else {
+        // Wenn keine DAY_SEPARATOR Einträge vorhanden, erstelle einen virtuellen Eintrag
+        entries.push({
+          id: `virtual-${station.id}`,
+          type: EntryTypeEnum.DAY_SEPARATOR,
+          title: station.title,
+          date: new Date().toISOString().split('T')[0], // Heute als Fallback
+          stationColor: station.color,
+          stationTitle: station.title
+        });
+      }
+    }
+    
+    return entries.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+  }, [stations]);
   
   const activeDayIndex = useMemo(() => {
-    return daySeparatorEntries.findIndex(d => d.id === activeDayEntryId);
-  }, [daySeparatorEntries, activeDayEntryId]);
+    return timelineEntries.findIndex(d => d.id === activeDayEntryId);
+  }, [timelineEntries, activeDayEntryId]);
   
-  const activeDay = useMemo(() => activeDayIndex !== -1 ? daySeparatorEntries[activeDayIndex] : null, [activeDayIndex, daySeparatorEntries]);
+  const activeDay = useMemo(() => activeDayIndex !== -1 ? timelineEntries[activeDayIndex] : null, [activeDayIndex, timelineEntries]);
 
   // --- LAYOUT LOGIC ---
 
   const layout = useMemo(() => {
-    const totalDays = daySeparatorEntries.length;
+    const totalDays = timelineEntries.length;
     if (totalDays === 0) return null;
 
     const isMobile = width < 768;
@@ -64,11 +100,11 @@ const Timeline: React.FC<TimelineProps> = ({ stations, activeDayEntryId, onDayCl
     const needsTwoRows = isMobile && totalDays * dayNodeWidth > containerWidth;
     
     const daysPerRow = needsTwoRows ? Math.ceil(totalDays / 2) : totalDays;
-    const firstRowDays = daySeparatorEntries.slice(0, daysPerRow);
-    const secondRowDays = needsTwoRows ? daySeparatorEntries.slice(daysPerRow).reverse() : [];
+    const firstRowDays = timelineEntries.slice(0, daysPerRow);
+    const secondRowDays = needsTwoRows ? timelineEntries.slice(daysPerRow).reverse() : [];
 
     return { needsTwoRows, firstRowDays, secondRowDays, daysPerRow, totalDays, isMobile };
-  }, [daySeparatorEntries, width, containerRef.current]);
+  }, [timelineEntries, width, containerRef.current]);
 
   if (!layout) return null;
   const { needsTwoRows, firstRowDays, secondRowDays, daysPerRow, totalDays, isMobile } = layout;
@@ -76,12 +112,12 @@ const Timeline: React.FC<TimelineProps> = ({ stations, activeDayEntryId, onDayCl
 
   // --- SUB-COMPONENTS ---
 
-  const DayNode = ({ dayEntry }: { dayEntry: typeof daySeparatorEntries[0] }) => {
+  const DayNode = ({ dayEntry }: { dayEntry: typeof timelineEntries[0] }) => {
     const colors = colorMapping[dayEntry.stationColor] || colorMapping.gray;
     const isActive = dayEntry.id === activeDayEntryId;
     
-    // Spezielle Behandlung für "Vorm Urlaub"
-    if (dayEntry.id === 'before-trip-separator') {
+    // Spezielle Behandlung für "Vorm Urlaub" - kein Tageseintrag mehr
+    if (dayEntry.stationTitle === 'Vor dem Urlaub') {
       return (
         <button
           key={dayEntry.id}
@@ -94,6 +130,13 @@ const Timeline: React.FC<TimelineProps> = ({ stations, activeDayEntryId, onDayCl
       );
     }
     
+    // Zeige den tatsächlichen Tag des Eintrags
+    const getDayNumber = () => {
+      // Verwende das tatsächliche Datum des Eintrags
+      const entryDate = new Date(dayEntry.date);
+      return entryDate.getDate();
+    };
+    
     return (
       <button
         key={dayEntry.id}
@@ -101,7 +144,7 @@ const Timeline: React.FC<TimelineProps> = ({ stations, activeDayEntryId, onDayCl
         className={`relative rounded-full flex items-center justify-center text-white text-xs font-bold ${colors.bg} border-2 ${colors.border} shadow-md transition-all duration-300 ease-in-out hover:scale-110 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-amber-50 ${isActive ? 'w-6 h-6 sm:w-7 sm:h-7 scale-110' : 'w-5 h-5'} flex-shrink-0`}
         aria-label={dayEntry.title}
       >
-        {new Date(dayEntry.date + 'T00:00:00').getDate()}
+        {getDayNumber()}
       </button>
     );
   };

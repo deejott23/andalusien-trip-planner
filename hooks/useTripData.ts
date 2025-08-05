@@ -1,7 +1,19 @@
 import { useState, useCallback, useEffect } from 'react';
 import type { Trip, Day, Entry, LinkEntry, NoteEntry, Attachment, DaySeparatorEntry } from '../types';
 import { EntryTypeEnum } from '../types';
-import { fetchUrlMetadata } from '../services/geminiService';
+// Funktion zum Abrufen von URL-Metadaten über Netlify Function
+const fetchUrlMetadata = async (url: string) => {
+  try {
+    const response = await fetch(`/.netlify/functions/fetch-metadata?url=${encodeURIComponent(url)}`);
+    if (!response.ok) {
+      throw new Error('Failed to fetch metadata');
+    }
+    return await response.json();
+  } catch (error) {
+    console.error('Error fetching metadata:', error);
+    return { title: url, description: '', imageUrl: null };
+  }
+};
 import { tripService } from '../services/firebase';
 
 const initialStations: Day[] = [
@@ -314,6 +326,29 @@ export const useTripData = (tripId: string = 'andalusien-2025') => {
     let newEntry: Entry;
     const tempId = `entry-${Date.now()}`;
     
+    // Spezielle Behandlung für "Vor dem Urlaub" Station
+    if (dayId === 'before-trip') {
+      // Erstelle die "Vor dem Urlaub" Station, falls sie nicht existiert
+      const beforeTripDay = {
+        id: 'before-trip',
+        title: 'Vor dem Urlaub',
+        duration: 0,
+        color: 'gray',
+        entries: []
+      };
+      
+      // Füge die Station hinzu, falls sie nicht existiert
+      if (!trip.days.some(day => day.id === 'before-trip')) {
+        setTrip(prevTrip => {
+          if (!prevTrip) return prevTrip;
+          return {
+            ...prevTrip,
+            days: [beforeTripDay, ...prevTrip.days]
+          };
+        });
+      }
+    }
+    
     if (type === EntryTypeEnum.DAY_SEPARATOR && data.title && data.date) {
         newEntry = {
             id: tempId,
@@ -362,6 +397,29 @@ export const useTripData = (tripId: string = 'andalusien-2025') => {
 
       setTrip(prevTrip => {
         if (!prevTrip) return prevTrip;
+        
+        // Spezielle Behandlung für "Vor dem Urlaub" Station
+        if (dayId === 'before-trip') {
+          // Prüfe, ob die Station bereits existiert
+          const beforeTripExists = prevTrip.days.some(day => day.id === 'before-trip');
+          
+          if (!beforeTripExists) {
+            // Erstelle die Station und füge den Eintrag hinzu
+            const beforeTripDay = {
+              id: 'before-trip',
+              title: 'Vor dem Urlaub',
+              duration: 0,
+              color: 'gray',
+              entries: [newEntry]
+            };
+            
+            return {
+              ...prevTrip,
+              days: [beforeTripDay, ...prevTrip.days]
+            };
+          }
+        }
+        
         return {
           ...prevTrip,
           days: prevTrip.days.map(day => 
@@ -402,6 +460,29 @@ export const useTripData = (tripId: string = 'andalusien-2025') => {
       
       setTrip(prevTrip => {
         if (!prevTrip) return prevTrip;
+        
+        // Spezielle Behandlung für "Vor dem Urlaub" Station
+        if (dayId === 'before-trip') {
+          // Prüfe, ob die Station bereits existiert
+          const beforeTripExists = prevTrip.days.some(day => day.id === 'before-trip');
+          
+          if (!beforeTripExists) {
+            // Erstelle die Station und füge den Eintrag hinzu
+            const beforeTripDay = {
+              id: 'before-trip',
+              title: 'Vor dem Urlaub',
+              duration: 0,
+              color: 'gray',
+              entries: [newEntry]
+            };
+            
+            return {
+              ...prevTrip,
+              days: [beforeTripDay, ...prevTrip.days]
+            };
+          }
+        }
+        
         return {
           ...prevTrip,
           days: prevTrip.days.map(day => 
@@ -417,6 +498,28 @@ export const useTripData = (tripId: string = 'andalusien-2025') => {
     
     setTrip((prevTrip) => {
       if (!prevTrip) return prevTrip;
+      
+      // Spezielle Behandlung für "Vor dem Urlaub" Station
+      if (dayId === 'before-trip') {
+        const beforeTripExists = prevTrip.days.some(day => day.id === 'before-trip');
+        
+        if (!beforeTripExists) {
+          // Erstelle die Station falls sie nicht existiert
+          const beforeTripDay = {
+            id: 'before-trip',
+            title: 'Vor dem Urlaub',
+            duration: 0,
+            color: 'gray',
+            entries: [updatedEntry]
+          };
+          
+          return {
+            ...prevTrip,
+            days: [beforeTripDay, ...prevTrip.days]
+          };
+        }
+      }
+      
       return {
         ...prevTrip,
         days: prevTrip.days.map((day) =>
@@ -438,6 +541,17 @@ export const useTripData = (tripId: string = 'andalusien-2025') => {
     
     setTrip((prevTrip) => {
       if (!prevTrip) return prevTrip;
+      
+      // Spezielle Behandlung für "Vor dem Urlaub" Station
+      if (dayId === 'before-trip') {
+        const beforeTripExists = prevTrip.days.some(day => day.id === 'before-trip');
+        
+        if (!beforeTripExists) {
+          // Station existiert nicht, nichts zu löschen
+          return prevTrip;
+        }
+      }
+      
       return {
         ...prevTrip,
         days: prevTrip.days.map((day) =>

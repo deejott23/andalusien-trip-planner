@@ -57,7 +57,7 @@ export default function App(): React.ReactNode {
     return Math.max(0, diffDays);
   };
 
-  // Erstelle virtuelle "Vor dem Urlaub" Station
+  // Erstelle eigenständige "Vor dem Urlaub" Station
   const beforeTripDay = useMemo(() => {
     if (!trip?.startDate) return null;
     
@@ -69,27 +69,55 @@ export default function App(): React.ReactNode {
     
     const daysUntilTrip = getDaysUntilTrip();
     
+    // Prüfe, ob bereits eine "Vor dem Urlaub" Station in trip.days existiert
+    const existingBeforeTrip = trip.days.find(day => day.id === 'before-trip');
+    
     return {
       id: 'before-trip',
       title: 'Vor dem Urlaub',
       duration: daysUntilTrip,
       color: 'gray',
       entries: [
-        {
-          id: 'before-trip-separator',
-          type: EntryTypeEnum.DAY_SEPARATOR,
-          title: `Vor dem Urlaub (${daysUntilTrip} Tage)`,
-          date: new Date().toISOString().split('T')[0]
-        }
+        // Kein Tageseintrag mehr - nur bestehende Einträge
+        ...(existingBeforeTrip?.entries.filter(entry => entry.id !== 'before-trip-separator') || [])
       ]
     };
-  }, [trip?.startDate, getDaysUntilTrip]);
+  }, [trip?.startDate, trip?.days, getDaysUntilTrip]);
 
   // Kombiniere "Vor dem Urlaub" mit den anderen Tagen
   const allDays = useMemo(() => {
     if (!beforeTripDay) return trip?.days || [];
-    return [beforeTripDay, ...(trip?.days || [])];
+    
+    // Entferne "Vor dem Urlaub" aus trip.days, falls vorhanden, um Duplikate zu vermeiden
+    const otherDays = trip?.days.filter(day => day.id !== 'before-trip') || [];
+    return [beforeTripDay, ...otherDays];
   }, [beforeTripDay, trip?.days]);
+  
+  // Erstelle eine echte "Vor dem Urlaub" Station in trip.days
+  const tripWithBeforeTrip = useMemo(() => {
+    if (!trip || !beforeTripDay) return trip;
+    
+    // Prüfe, ob "Vor dem Urlaub" bereits in trip.days existiert
+    const beforeTripExists = trip.days.some(day => day.id === 'before-trip');
+    
+    if (!beforeTripExists) {
+      return {
+        ...trip,
+        days: [beforeTripDay, ...trip.days]
+      };
+    }
+    
+    // Aktualisiere die bestehende "Vor dem Urlaub" Station mit beforeTripDay
+    return {
+      ...trip,
+      days: trip.days.map(day => 
+        day.id === 'before-trip' ? beforeTripDay : day
+      )
+    };
+  }, [trip, beforeTripDay]);
+  
+  // Verwende tripWithBeforeTrip anstelle von trip für die Anzeige
+  const displayTrip = tripWithBeforeTrip || trip;
 
   // Bestimme den Standard-Tag für die Navigation
   const getDefaultActiveDay = () => {
@@ -101,7 +129,7 @@ export default function App(): React.ReactNode {
     
     // Wenn heute vor der Reise liegt, starte mit "Vorm Urlaub"
     if (today < tripStart) {
-      return 'before-trip-separator';
+      return 'virtual-before-trip';
     }
     
     // Ansonsten finde den passenden Reisetag
@@ -187,13 +215,26 @@ export default function App(): React.ReactNode {
       title: 'Eintrag löschen',
       message: 'Sind Sie sicher, dass Sie diesen Eintrag löschen möchten?',
       onConfirm: () => {
-        if (editEntryModalState.dayId) {
-          deleteEntry(editEntryModalState.dayId, entryId);
+        // Finde den korrekten dayId für diesen Eintrag
+        let targetDayId = editEntryModalState.dayId;
+        if (!targetDayId && displayTrip) {
+          // Suche in allen Tagen (einschließlich "Vor dem Urlaub")
+          for (const day of displayTrip.days) {
+            const entryExists = day.entries.some(e => e.id === entryId);
+            if (entryExists) {
+              targetDayId = day.id;
+              break;
+            }
+          }
+        }
+        
+        if (targetDayId) {
+          deleteEntry(targetDayId, entryId);
         }
         setConfirmModalState({ isOpen: false, title: '', message: '', onConfirm: () => {} });
       },
     });
-  }, [deleteEntry, editEntryModalState.dayId]);
+  }, [deleteEntry, editEntryModalState.dayId, displayTrip]);
 
   const handleScrollToDay = useCallback((dayEntryId: string) => {
     setActiveDayEntryId(dayEntryId);
@@ -292,7 +333,7 @@ export default function App(): React.ReactNode {
         </header>
         
         <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-            <Header title={trip.title} dateRange={trip.dateRange} />
+            <Header title={displayTrip?.title || ''} dateRange={displayTrip?.dateRange || ''} />
             <div className="space-y-8 mt-8">
                 {allDays.map((day, index) => (
                     <Day
@@ -351,9 +392,9 @@ export default function App(): React.ReactNode {
               closeAddEntryModal();
             }
           }}
-          station={trip.days.find(d => d.id === addEntryModalState.dayId) || null}
-          tripStartDate={trip.startDate}
-          allDays={trip.days}
+          station={allDays.find(d => d.id === addEntryModalState.dayId) || null}
+          tripStartDate={displayTrip?.startDate || ''}
+          allDays={allDays}
         />
 
                 <EditEntryModal
