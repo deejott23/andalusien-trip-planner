@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useRef, useEffect } from 'react';
+import React, { useState, useCallback, useRef, useEffect, useMemo } from 'react';
 import { useTripData } from './hooks/useTripData';
 import type { Entry, DaySeparatorEntry } from './types';
 import { EntryTypeEnum } from './types';
@@ -46,13 +46,77 @@ export default function App(): React.ReactNode {
   const daySeparatorEntries = trip?.days?.flatMap(day => 
     day.entries.filter((e): e is DaySeparatorEntry => e.type === EntryTypeEnum.DAY_SEPARATOR)
   ) || [];
+
+  // Berechne Tage bis zur Reise
+  const getDaysUntilTrip = () => {
+    if (!trip?.startDate) return 0;
+    const today = new Date();
+    const tripStart = new Date(trip.startDate);
+    const diffTime = tripStart.getTime() - today.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return Math.max(0, diffDays);
+  };
+
+  // Erstelle virtuelle "Vor dem Urlaub" Station
+  const beforeTripDay = useMemo(() => {
+    if (!trip?.startDate) return null;
+    
+    const today = new Date();
+    const tripStart = new Date(trip.startDate);
+    
+    // Nur erstellen, wenn wir vor der Reise sind
+    if (today >= tripStart) return null;
+    
+    const daysUntilTrip = getDaysUntilTrip();
+    
+    return {
+      id: 'before-trip',
+      title: 'Vor dem Urlaub',
+      duration: daysUntilTrip,
+      color: 'gray',
+      entries: [
+        {
+          id: 'before-trip-separator',
+          type: EntryTypeEnum.DAY_SEPARATOR,
+          title: `Vor dem Urlaub (${daysUntilTrip} Tage)`,
+          date: new Date().toISOString().split('T')[0]
+        }
+      ]
+    };
+  }, [trip?.startDate, getDaysUntilTrip]);
+
+  // Kombiniere "Vor dem Urlaub" mit den anderen Tagen
+  const allDays = useMemo(() => {
+    if (!beforeTripDay) return trip?.days || [];
+    return [beforeTripDay, ...(trip?.days || [])];
+  }, [beforeTripDay, trip?.days]);
+
+  // Bestimme den Standard-Tag für die Navigation
+  const getDefaultActiveDay = () => {
+    if (!trip?.startDate || daySeparatorEntries.length === 0) return daySeparatorEntries[0]?.id || null;
+    
+    const today = new Date();
+    const tripStart = new Date(trip.startDate);
+    const daysUntilTrip = getDaysUntilTrip();
+    
+    // Wenn heute vor der Reise liegt, starte mit "Vorm Urlaub"
+    if (today < tripStart) {
+      return 'before-trip-separator';
+    }
+    
+    // Ansonsten finde den passenden Reisetag
+    const todayStr = today.toISOString().split('T')[0];
+    const matchingDay = daySeparatorEntries.find(day => day.date >= todayStr);
+    return matchingDay?.id || daySeparatorEntries[0]?.id;
+  };
   
   useEffect(() => {
-    // Set initial active day to the first day separator if available
+    // Set initial active day based on current date
     if (daySeparatorEntries.length > 0 && !activeDayEntryId) {
-      setActiveDayEntryId(daySeparatorEntries[0].id);
+      const defaultDay = getDefaultActiveDay();
+      setActiveDayEntryId(defaultDay);
     }
-  }, [daySeparatorEntries, activeDayEntryId]);
+  }, [daySeparatorEntries, activeDayEntryId, trip?.startDate]);
 
   // ALLE Hooks müssen vor den bedingten Returns stehen!
   const openAddEntryModal = useCallback((dayId: string) => {
@@ -133,6 +197,7 @@ export default function App(): React.ReactNode {
 
   const handleScrollToDay = useCallback((dayEntryId: string) => {
     setActiveDayEntryId(dayEntryId);
+    
     const ref = entryRefs.current.get(dayEntryId);
     if (ref) {
       ref.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -219,21 +284,22 @@ export default function App(): React.ReactNode {
       <div className="min-h-screen font-sans text-slate-800">
         <header className="sticky top-0 z-20 bg-amber-50/80 backdrop-blur-lg shadow-sm">
            <Timeline 
-            stations={trip.days}
+            stations={allDays}
             activeDayEntryId={activeDayEntryId}
             onDayClick={handleScrollToDay}
+            tripStartDate={trip.startDate}
           />
         </header>
         
         <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
             <Header title={trip.title} dateRange={trip.dateRange} />
             <div className="space-y-8 mt-8">
-                {trip.days.map((day, index) => (
+                {allDays.map((day, index) => (
                     <Day
                         key={day.id}
                         day={day}
                         dayIndex={index}
-                        totalDays={trip.days.length}
+                        totalDays={allDays.length}
                         onMoveDay={moveDay}
                         onAddEntry={() => openAddEntryModal(day.id)}
                         onDeleteDay={() => handleConfirmDeleteDay(day.id)}
