@@ -36,6 +36,9 @@ export interface InfoEntry {
   imageUrl?: string;
   attachment?: Attachment;
   reactions?: Reactions;
+  status?: 'loading' | 'loaded' | 'error';
+  description?: string;
+  domain?: string;
 }
 
 export interface NoteEntry {

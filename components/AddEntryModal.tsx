@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { EntryTypeEnum, CategoryEnum, Attachment, Day, DaySeparatorEntry } from '../types';
-import { XIcon, InfoIcon, FileTextIcon, UploadCloudIcon, PaperclipIcon, CalendarIcon, getCategoryIcon } from './Icons';
+import { XIcon, InfoIcon, FileTextIcon, UploadCloudIcon, PaperclipIcon, CalendarIcon, LinkIcon, getCategoryIcon } from './Icons';
 import Spinner from './Spinner';
 import RichTextEditor from './RichTextEditor';
 
@@ -48,7 +48,7 @@ const AddEntryModal: React.FC<AddEntryModalProps> = ({ isOpen, onClose, onAddEnt
         const stationRanges = {
           'station-cadiz': { start: { day: 27, month: 8 }, end: { day: 31, month: 8 } },
           'station-marbella': { start: { day: 31, month: 8 }, end: { day: 4, month: 9 } },
-          'station-torox': { start: { day: 4, month: 9 }, end: { day: 11, month: 9 } }
+          'station-torrox': { start: { day: 4, month: 9 }, end: { day: 11, month: 9 } }
         };
         
         const range = stationRanges[station.id];
@@ -244,7 +244,7 @@ const AddEntryModal: React.FC<AddEntryModalProps> = ({ isOpen, onClose, onAddEnt
                     )}
                   </div>
                 </>
-            )}
+                        )}
 
             {activeTab === EntryTypeEnum.DAY_SEPARATOR && (
                 <>

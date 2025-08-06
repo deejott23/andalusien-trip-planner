@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
-import type { Entry, LinkEntry, NoteEntry, DaySeparatorEntry, Reactions } from '../types';
+import type { Entry, InfoEntry, NoteEntry, DaySeparatorEntry, Reactions } from '../types';
 import { EntryTypeEnum } from '../types';
-import { TrashIcon, LinkIcon, FileTextIcon, EditIcon, PaperclipIcon, ArrowUpIcon, ArrowDownIcon, ThumbsUpIcon, ThumbsDownIcon, MoreHorizontalIcon } from './Icons';
+import { TrashIcon, LinkIcon, FileTextIcon, EditIcon, PaperclipIcon, ArrowUpIcon, ArrowDownIcon, MoreHorizontalIcon, getCategoryIcon } from './Icons';
 import Spinner from './Spinner';
 
 // Drag Handle Icon
@@ -65,27 +65,7 @@ const CardMenu: React.FC<{
 };
 
 
-const VotingActions: React.FC<{
-    onReact: (reaction: 'like' | 'dislike') => void;
-    reactions?: Reactions;
-}> = ({ onReact, reactions }) => {
-    const likes = reactions?.likes || 0;
-    const dislikes = reactions?.dislikes || 0;
-    const userReaction = reactions?.userReaction;
 
-    return (
-        <div className="flex items-center gap-4 mt-2 pt-2 border-t border-slate-100/80">
-            <button onClick={() => onReact('like')} className={`flex items-center gap-1.5 px-2 py-1 rounded-full transition-colors ${userReaction === 'like' ? 'bg-green-100 text-green-600' : 'bg-transparent text-slate-400 hover:bg-green-50 hover:text-green-500'}`} aria-label="Gefällt mir">
-                <ThumbsUpIcon className="w-4 h-4" />
-                <span className="text-xs font-semibold">{likes}</span>
-            </button>
-            <button onClick={() => onReact('dislike')} className={`flex items-center gap-1.5 px-2 py-1 rounded-full transition-colors ${userReaction === 'dislike' ? 'bg-red-100 text-red-600' : 'bg-transparent text-slate-400 hover:bg-red-50 hover:text-red-500'}`} aria-label="Gefällt mir nicht">
-                <ThumbsDownIcon className="w-4 h-4" />
-                <span className="text-xs font-semibold">{dislikes}</span>
-            </button>
-        </div>
-    );
-};
 
 
 const Favicon: React.FC<{ domain: string }> = ({ domain }) => {
@@ -117,7 +97,7 @@ const useCardMenu = () => {
 };
 
 const LinkCard: React.FC<{ 
-  entry: LinkEntry; 
+  entry: InfoEntry; 
   onDelete: () => void; 
   onEdit: () => void; 
   onMove: (d:number)=>void; 
@@ -146,7 +126,7 @@ const LinkCard: React.FC<{
     // Verbesserte Bild-Fehlerbehandlung
     if (hasImage && !imageLoadError) {
       return (
-        <a href={entry.url} target="_blank" rel="noopener" className="flex items-center self-stretch overflow-hidden">
+        <a href={entry.url} target="_blank" rel="noopener" className="flex items-center self-stretch overflow-hidden hover:bg-slate-50 transition-colors">
           <div className="w-24 flex-shrink-0 bg-slate-100 self-stretch">
             <img 
               src={entry.imageUrl!} 
@@ -162,7 +142,7 @@ const LinkCard: React.FC<{
             />
           </div>
           <div className="p-3 flex flex-col min-w-0">
-            <h3 className="font-semibold line-clamp-2 text-slate-900">{entry.title}</h3>
+            <h3 className="font-semibold line-clamp-2 text-slate-900 hover:text-blue-600 transition-colors cursor-pointer">{entry.title}</h3>
             <p className="text-sm text-slate-500 line-clamp-2 mt-1">{entry.description || entry.domain}</p>
           </div>
         </a>
@@ -171,12 +151,12 @@ const LinkCard: React.FC<{
     
     // Fallback ohne Bild
     return (
-       <a href={entry.url} target="_blank" rel="noopener" className="p-4 flex items-center gap-4">
+       <a href={entry.url} target="_blank" rel="noopener" className="p-4 flex items-center gap-4 hover:bg-slate-50 transition-colors">
         <div className="flex-shrink-0 w-10 h-10 bg-slate-100 rounded-lg flex items-center justify-center overflow-hidden">
           {entry.status === 'error' ? <LinkIcon className="w-5 h-5 text-slate-400" /> : <Favicon domain={entry.domain} />}
         </div>
         <div className="flex-grow min-w-0">
-          <h3 className="font-semibold line-clamp-2 text-slate-900">{entry.title}</h3>
+          <h3 className="font-semibold line-clamp-2 text-slate-900 hover:text-blue-600 transition-colors cursor-pointer">{entry.title}</h3>
           <p className="text-sm text-slate-500 truncate mt-1">{entry.description || entry.domain}</p>
         </div>
       </a>
@@ -220,11 +200,8 @@ const LinkCard: React.FC<{
                 <MoreHorizontalIcon className="w-4 h-4" />
             </button>
         </div>
-        <CardMenu isOpen={isMenuOpen} menuRef={menuRef} onEdit={onEdit} onDelete={onDelete} onMove={onMove} index={index} total={total} />
-        <CardContent/>
-        <div className="px-4 pb-2">
-            <VotingActions onReact={onUpdateReaction} reactions={entry.reactions} />
-        </div>
+                 <CardMenu isOpen={isMenuOpen} menuRef={menuRef} onEdit={onEdit} onDelete={onDelete} onMove={onMove} index={index} total={total} />
+         <CardContent/>
     </div>
   );
 };
@@ -241,8 +218,22 @@ const NoteCard: React.FC<{
   dragListeners?: any;
 }> = ({ entry, onDelete, onEdit, onMove, onUpdateReaction, index, total, dragAttributes, dragListeners }) => {
   const { isMenuOpen, setIsMenuOpen, menuRef, triggerRef } = useCardMenu();
+  
+  // Entferne Leerzeilen aus dem Content
+  const cleanContent = entry.content.replace(/(<p><br><\/p>)+/g, '<p><br></p>');
+  
+  // Extrahiere Domain aus URL für Anzeige
+  const getDomainFromUrl = (url: string) => {
+    try {
+      const urlObj = new URL(url);
+      return urlObj.hostname.replace('www.', '');
+    } catch {
+      return url;
+    }
+  };
+  
   return (
-    <div className="relative group bg-amber-50 border border-amber-200 rounded-lg flex flex-col">
+    <div className="relative group bg-amber-50 border border-amber-200 rounded-lg">
        <div className="absolute top-2 right-2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-30">
            <button 
              onClick={(e) => {
@@ -281,19 +272,57 @@ const NoteCard: React.FC<{
        <CardMenu isOpen={isMenuOpen} menuRef={menuRef} onEdit={onEdit} onDelete={onDelete} onMove={onMove} index={index} total={total} />
 
       <div className="p-4">
-        <div className="flex items-start gap-3"><FileTextIcon className="w-5 h-5 text-amber-500 mt-1 flex-shrink-0" /><div className="prose prose-sm max-w-none text-slate-700 w-full" dangerouslySetInnerHTML={{ __html: entry.content }} /></div>
-        {entry.attachment && (
-          <div className="mt-3 ml-8">
-            {entry.attachment.mimeType.startsWith('image/') ? (
-              <img src={entry.attachment.url} alt="Notiz-Anhang" className="rounded-lg max-h-48 w-auto object-cover border border-amber-200" />
-            ) : (
-              <a href={entry.attachment.url} download={entry.attachment.name} className="flex items-center gap-2 p-2 bg-amber-100 border border-amber-200 rounded-lg hover:bg-amber-200 transition-colors"><PaperclipIcon className="w-5 h-5 text-amber-600 flex-shrink-0" /><span className="text-sm text-amber-800 truncate">{entry.attachment.name}</span></a>
+        <div className="flex items-start gap-3">
+          {getCategoryIcon(entry.category, 'w-5 h-5 text-amber-500 mt-1 flex-shrink-0')}
+          <div className="w-full">
+            {entry.title && (
+              <h3 className="font-bold text-slate-800 mb-2">
+                {entry.url ? (
+                  <a 
+                    href={entry.url} 
+                    target="_blank" 
+                    rel="noopener" 
+                    className="hover:text-blue-600 transition-colors cursor-pointer"
+                  >
+                    {entry.title}
+                  </a>
+                ) : (
+                  entry.title
+                )}
+              </h3>
+            )}
+            <div className="prose prose-sm max-w-none text-slate-700" dangerouslySetInnerHTML={{ __html: cleanContent }} />
+            
+            {/* URL-Anzeige wenn vorhanden */}
+            {entry.url && (
+              <div className="mt-3 flex items-center gap-2">
+                <LinkIcon className="w-4 h-4 text-amber-600 flex-shrink-0" />
+                <a 
+                  href={entry.url} 
+                  target="_blank" 
+                  rel="noopener" 
+                  className="text-sm text-amber-700 hover:text-amber-900 transition-colors cursor-pointer truncate"
+                  title={entry.url}
+                >
+                  {getDomainFromUrl(entry.url)}
+                </a>
+              </div>
+            )}
+            
+            {entry.attachment && (
+              <div className="mt-3">
+                {entry.attachment.mimeType.startsWith('image/') ? (
+                  <img src={entry.attachment.url} alt="Notiz-Anhang" className="rounded-lg max-h-48 w-auto object-cover border border-amber-200" />
+                ) : (
+                  <a href={entry.attachment.url} download={entry.attachment.name} className="flex items-center gap-2 p-2 bg-amber-100 border border-amber-200 rounded-lg hover:bg-amber-200 transition-colors">
+                    <PaperclipIcon className="w-5 h-5 text-amber-600 flex-shrink-0" />
+                    <span className="text-sm text-amber-800 truncate">{entry.attachment.name}</span>
+                  </a>
+                )}
+              </div>
             )}
           </div>
-        )}
-      </div>
-      <div className="px-4 pb-2 mt-auto">
-        <VotingActions onReact={onUpdateReaction} reactions={entry.reactions} />
+        </div>
       </div>
     </div>
   );
@@ -390,7 +419,7 @@ const EntryCard: React.FC<EntryCardProps> = ({ entry, entryIndex, totalEntries, 
   return (
     <div ref={ref} id={entry.id} className="scroll-mt-40" data-entry-type={entry.type}>
         {entry.type === EntryTypeEnum.DAY_SEPARATOR && <DaySeparatorCard entry={entry} onEdit={props.onEdit} onDelete={props.onDelete} onMove={onMove} index={entryIndex} total={totalEntries} dragAttributes={dragAttributes} dragListeners={dragListeners}/>}
-        {entry.type === EntryTypeEnum.LINK && <LinkCard entry={entry} {...commonProps} />}
+        {entry.type === EntryTypeEnum.INFO && <LinkCard entry={entry} {...commonProps} />}
         {entry.type === EntryTypeEnum.NOTE && <NoteCard entry={entry} {...commonProps} />}
     </div>
   );

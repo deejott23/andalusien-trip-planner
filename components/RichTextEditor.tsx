@@ -19,11 +19,34 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({ value, onChange, placeh
   }, [value]);
 
   const handleCommand = (command: string) => {
-    document.execCommand(command, false);
     if (editorRef.current) {
-        // Manually trigger onChange after a command to update parent state
-        onChange(editorRef.current.innerHTML);
-        editorRef.current.focus();
+      editorRef.current.focus();
+      
+      if (command === 'insertUnorderedList') {
+        // Manuelle Implementierung für Aufzählungen
+        const selection = window.getSelection();
+        if (selection && selection.rangeCount > 0) {
+          const range = selection.getRangeAt(0);
+          const listItem = document.createElement('li');
+          listItem.textContent = '• ';
+          
+          // Füge das Listenelement ein
+          range.deleteContents();
+          range.insertNode(listItem);
+          
+          // Setze den Cursor nach dem Bullet Point
+          range.setStartAfter(listItem);
+          range.collapse(true);
+          selection.removeAllRanges();
+          selection.addRange(range);
+        }
+      } else {
+        // Verwende execCommand für andere Befehle
+        document.execCommand(command, false);
+      }
+      
+      // Manually trigger onChange after a command to update parent state
+      onChange(editorRef.current.innerHTML);
     }
   };
 
