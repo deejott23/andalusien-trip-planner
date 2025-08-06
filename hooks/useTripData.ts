@@ -80,7 +80,34 @@ export const useTripData = (tripId: string = 'andalusien-2025') => {
         console.log('✅ Firebase-Daten geladen');
         setTrip(firebaseTrip);
       } else {
-        console.log('📋 Keine Firebase-Daten - Verwende Demo-Daten');
+        console.log('📋 Keine Firebase-Daten - Prüfe lokales Backup...');
+        
+        // Prüfe lokales Backup
+        try {
+          const backupData = localStorage.getItem('andalusien-trip-backup');
+          const backupTimestamp = localStorage.getItem('andalusien-trip-backup-timestamp');
+          
+          if (backupData && backupTimestamp) {
+            const backupAge = Date.now() - parseInt(backupTimestamp);
+            const maxAge = 7 * 24 * 60 * 60 * 1000; // 7 Tage
+            
+            if (backupAge < maxAge) {
+              console.log('✅ Lokales Backup gefunden und geladen');
+              const restoredTrip = JSON.parse(backupData);
+              setTrip(restoredTrip);
+              setLoading(false);
+              return;
+            } else {
+              console.log('⚠️ Lokales Backup zu alt, verwende Demo-Daten');
+              localStorage.removeItem('andalusien-trip-backup');
+              localStorage.removeItem('andalusien-trip-backup-timestamp');
+            }
+          }
+        } catch (error) {
+          console.warn('⚠️ Fehler beim Laden des lokalen Backups:', error);
+        }
+        
+        console.log('📋 Verwende Demo-Daten');
         loadDemoData();
         // Speichere Demo-Daten in Firebase (nur wenn Firebase verfügbar)
         if (tripService.isConnected()) {
@@ -123,6 +150,17 @@ export const useTripData = (tripId: string = 'andalusien-2025') => {
     if (trip && !loading) {
       const saveTimeout = setTimeout(() => {
         const cleanedTrip = cleanTripData(trip);
+        
+        // Lokales Backup erstellen
+        try {
+          localStorage.setItem('andalusien-trip-backup', JSON.stringify(cleanedTrip));
+          localStorage.setItem('andalusien-trip-backup-timestamp', Date.now().toString());
+          console.log('✅ Lokales Backup erstellt');
+        } catch (error) {
+          console.warn('⚠️ Lokales Backup fehlgeschlagen:', error);
+        }
+        
+        // Firebase speichern
         tripService.saveTrip(cleanedTrip).catch((err) => {
           console.error('Fehler beim automatischen Speichern:', err);
           setError('Fehler beim Speichern der Änderungen');
@@ -511,6 +549,42 @@ export const useTripData = (tripId: string = 'andalusien-2025') => {
     }
   }, [tripId]);
 
+  // Funktion zum manuellen Backup erstellen
+  const createBackup = useCallback(() => {
+    if (!trip) return;
+    
+    try {
+      const backupData = JSON.stringify(trip);
+      localStorage.setItem('andalusien-trip-backup', backupData);
+      localStorage.setItem('andalusien-trip-backup-timestamp', Date.now().toString());
+      console.log('✅ Manuelles Backup erstellt');
+      return true;
+    } catch (error) {
+      console.error('❌ Fehler beim Erstellen des Backups:', error);
+      return false;
+    }
+  }, [trip]);
+
+  // Funktion zum Backup wiederherstellen
+  const restoreBackup = useCallback(() => {
+    try {
+      const backupData = localStorage.getItem('andalusien-trip-backup');
+      if (backupData) {
+        const restoredTrip = JSON.parse(backupData);
+        setTrip(restoredTrip);
+        setError(null);
+        console.log('✅ Backup wiederhergestellt');
+        return true;
+      } else {
+        console.log('❌ Kein Backup gefunden');
+        return false;
+      }
+    } catch (error) {
+      console.error('❌ Fehler beim Wiederherstellen des Backups:', error);
+      return false;
+    }
+  }, []);
+
   return { 
     trip, 
     loading, 
@@ -525,5 +599,7 @@ export const useTripData = (tripId: string = 'andalusien-2025') => {
     moveEntry, 
     updateEntryReaction,
     resetDatabase,
+    createBackup,
+    restoreBackup,
   };
 };

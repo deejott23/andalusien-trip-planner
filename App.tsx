@@ -29,6 +29,8 @@ export default function App(): React.ReactNode {
     moveEntry,
     updateEntryReaction,
     resetDatabase,
+    createBackup,
+    restoreBackup,
   } = useTripData('andalusien-2025');
 
   const [isAddDayModalOpen, setAddDayModalOpen] = useState(false);
@@ -377,6 +379,20 @@ export default function App(): React.ReactNode {
                 Neue Station hinzufügen
               </button>
               
+              <button
+                onClick={createBackup}
+                className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-full font-semibold hover:bg-blue-700 transition-colors shadow-sm"
+              >
+                💾 Backup erstellen
+              </button>
+              
+              <button
+                onClick={restoreBackup}
+                className="inline-flex items-center gap-2 px-6 py-3 bg-green-600 text-white rounded-full font-semibold hover:bg-green-700 transition-colors shadow-sm"
+              >
+                🔄 Backup wiederherstellen
+              </button>
+              
               {error && (
                 <button
                   onClick={resetDatabase}
@@ -394,6 +410,10 @@ export default function App(): React.ReactNode {
                 <span className="text-xs">Die Datenbank wurde zu groß. Klicke "Datenbank zurücksetzen" um die Einträge wiederherzustellen.</span>
               </div>
             )}
+            
+            <div className="text-xs text-slate-500">
+              💡 <strong>Backup-System:</strong> Automatische Backups werden lokal gespeichert und bei Problemen wiederhergestellt.
+            </div>
           </div>
         </main>
 
