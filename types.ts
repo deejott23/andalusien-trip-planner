@@ -3,6 +3,7 @@ export enum EntryTypeEnum {
   INFO = 'INFO',
   NOTE = 'NOTE',
   DAY_SEPARATOR = 'DAY_SEPARATOR',
+  SEPARATOR = 'SEPARATOR',
 }
 
 export enum CategoryEnum {
@@ -59,7 +60,14 @@ export interface DaySeparatorEntry {
   date: string; // ISO 8601 format: YYYY-MM-DD
 }
 
-export type Entry = InfoEntry | NoteEntry | DaySeparatorEntry;
+export interface SeparatorEntry {
+  id: string;
+  type: EntryTypeEnum.SEPARATOR;
+  title?: string;
+  style: 'line' | 'section' | 'divider';
+}
+
+export type Entry = InfoEntry | NoteEntry | DaySeparatorEntry | SeparatorEntry;
 
 export interface Day {
   id: string;

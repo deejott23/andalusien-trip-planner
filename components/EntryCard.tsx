@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import type { Entry, InfoEntry, NoteEntry, DaySeparatorEntry, Reactions } from '../types';
+import type { Entry, InfoEntry, NoteEntry, DaySeparatorEntry, SeparatorEntry, Reactions } from '../types';
 import { EntryTypeEnum } from '../types';
 import { TrashIcon, LinkIcon, FileTextIcon, EditIcon, PaperclipIcon, ArrowUpIcon, ArrowDownIcon, MoreHorizontalIcon, getCategoryIcon } from './Icons';
 import Spinner from './Spinner';
@@ -328,6 +328,94 @@ const NoteCard: React.FC<{
   );
 };
 
+const SeparatorCard: React.FC<{ 
+  entry: SeparatorEntry; 
+  onDelete: () => void; 
+  onEdit: () => void; 
+  onMove: (d:number)=>void; 
+  index: number; 
+  total: number;
+  dragAttributes?: any;
+  dragListeners?: any;
+}> = ({ entry, onDelete, onEdit, onMove, index, total, dragAttributes, dragListeners }) => {
+  const { isMenuOpen, setIsMenuOpen, menuRef, triggerRef } = useCardMenu();
+
+  const getSeparatorContent = () => {
+    switch (entry.style) {
+      case 'line':
+        return (
+          <div className="flex items-center gap-3">
+            <div className="flex-grow h-px bg-slate-300"></div>
+            {entry.title && <span className="text-sm font-medium text-slate-600 px-2">{entry.title}</span>}
+            <div className="flex-grow h-px bg-slate-300"></div>
+          </div>
+        );
+      case 'section':
+        return (
+          <div className="bg-slate-100 rounded-lg p-3">
+            {entry.title && <h3 className="text-sm font-semibold text-slate-700 mb-2">{entry.title}</h3>}
+            <div className="h-1 bg-slate-300 rounded"></div>
+          </div>
+        );
+      case 'divider':
+        return (
+          <div className="flex items-center justify-center gap-2">
+            <div className="flex-grow h-px bg-slate-300"></div>
+            <div className="w-2 h-2 bg-slate-400 rounded-full"></div>
+            {entry.title && <span className="text-sm font-medium text-slate-600 px-2">{entry.title}</span>}
+            <div className="w-2 h-2 bg-slate-400 rounded-full"></div>
+            <div className="flex-grow h-px bg-slate-300"></div>
+          </div>
+        );
+      default:
+        return null;
+    }
+  };
+
+  return (
+    <div className="relative group py-2">
+      <div className="absolute top-1/2 right-0 -translate-y-1/2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-30">
+        <button 
+          onClick={(e) => {
+            e.stopPropagation();
+            onEdit();
+          }} 
+          className="p-1 rounded-full text-blue-500 hover:bg-blue-100 transition-colors cursor-pointer"
+          title="Bearbeiten"
+        >
+          <EditIcon className="w-4 h-4" />
+        </button>
+        <button 
+          onClick={(e) => {
+            e.stopPropagation();
+            onDelete();
+          }} 
+          className="p-1 rounded-full text-red-500 hover:bg-red-100 transition-colors cursor-pointer"
+          title="Löschen"
+        >
+          <TrashIcon className="w-4 h-4" />
+        </button>
+        <button 
+          ref={triggerRef} 
+          onClick={(e) => {
+            e.stopPropagation();
+            setIsMenuOpen(prev => !prev);
+          }} 
+          className="p-1 rounded-full text-slate-500 hover:bg-slate-100 transition-colors cursor-grab active:cursor-grabbing"
+          {...dragAttributes}
+          {...dragListeners}
+          title="Weitere Optionen"
+        >
+          <MoreHorizontalIcon className="w-4 h-4" />
+        </button>
+      </div>
+      <CardMenu isOpen={isMenuOpen} menuRef={menuRef} onEdit={onEdit} onDelete={onDelete} onMove={onMove} index={index} total={total} />
+      
+      {getSeparatorContent()}
+    </div>
+  );
+};
+
 const DaySeparatorCard: React.FC<{ 
   entry: DaySeparatorEntry; 
   onDelete: () => void; 
@@ -419,6 +507,7 @@ const EntryCard: React.FC<EntryCardProps> = ({ entry, entryIndex, totalEntries, 
   return (
     <div ref={ref} id={entry.id} className="scroll-mt-40" data-entry-type={entry.type}>
         {entry.type === EntryTypeEnum.DAY_SEPARATOR && <DaySeparatorCard entry={entry} onEdit={props.onEdit} onDelete={props.onDelete} onMove={onMove} index={entryIndex} total={totalEntries} dragAttributes={dragAttributes} dragListeners={dragListeners}/>}
+        {entry.type === EntryTypeEnum.SEPARATOR && <SeparatorCard entry={entry} onEdit={props.onEdit} onDelete={props.onDelete} onMove={onMove} index={entryIndex} total={totalEntries} dragAttributes={dragAttributes} dragListeners={dragListeners}/>}
         {entry.type === EntryTypeEnum.INFO && <LinkCard entry={entry} {...commonProps} />}
         {entry.type === EntryTypeEnum.NOTE && <NoteCard entry={entry} {...commonProps} />}
     </div>

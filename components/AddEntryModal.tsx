@@ -1,13 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { EntryTypeEnum, CategoryEnum, Attachment, Day, DaySeparatorEntry } from '../types';
-import { XIcon, InfoIcon, FileTextIcon, UploadCloudIcon, PaperclipIcon, CalendarIcon, LinkIcon, getCategoryIcon } from './Icons';
+import { EntryTypeEnum, CategoryEnum, Attachment, Day, DaySeparatorEntry, SeparatorEntry } from '../types';
+import { XIcon, InfoIcon, FileTextIcon, UploadCloudIcon, PaperclipIcon, CalendarIcon, LinkIcon, MinusIcon, getCategoryIcon } from './Icons';
 import Spinner from './Spinner';
 import RichTextEditor from './RichTextEditor';
 
 interface AddEntryModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onAddEntry: (type: EntryTypeEnum, data: { url?: string; content?: string; imageDataUrl?: string; attachment?: Attachment; title?: string; date?: string; category?: CategoryEnum; }) => Promise<void>;
+  onAddEntry: (type: EntryTypeEnum, data: { url?: string; content?: string; imageDataUrl?: string; attachment?: Attachment; title?: string; date?: string; category?: CategoryEnum; style?: 'line' | 'section' | 'divider'; }) => Promise<void>;
   station: Day | null;
   tripStartDate: string;
   allDays: Day[];
@@ -23,6 +23,8 @@ const AddEntryModal: React.FC<AddEntryModalProps> = ({ isOpen, onClose, onAddEnt
   const [attachment, setAttachment] = useState<Attachment | null>(null);
   const [daySeparatorTitle, setDaySeparatorTitle] = useState('');
   const [daySeparatorDate, setDaySeparatorDate] = useState('');
+  const [separatorTitle, setSeparatorTitle] = useState('');
+  const [separatorStyle, setSeparatorStyle] = useState<'line' | 'section' | 'divider'>('line');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -39,6 +41,8 @@ const AddEntryModal: React.FC<AddEntryModalProps> = ({ isOpen, onClose, onAddEnt
       setAttachment(null);
       setDaySeparatorTitle('');
       setDaySeparatorDate('');
+      setSeparatorTitle('');
+      setSeparatorStyle('line');
       setActiveTab(EntryTypeEnum.NOTE);
       setIsSubmitting(false);
 
@@ -119,6 +123,11 @@ const AddEntryModal: React.FC<AddEntryModalProps> = ({ isOpen, onClose, onAddEnt
       });
     } else if (activeTab === EntryTypeEnum.DAY_SEPARATOR && daySeparatorTitle.trim() && daySeparatorDate) {
       await onAddEntry(EntryTypeEnum.DAY_SEPARATOR, { title: daySeparatorTitle.trim(), date: daySeparatorDate });
+    } else if (activeTab === EntryTypeEnum.SEPARATOR) {
+      await onAddEntry(EntryTypeEnum.SEPARATOR, { 
+        title: separatorTitle.trim() || undefined,
+        style: separatorStyle 
+      });
     } else {
         setIsSubmitting(false);
     }
@@ -128,6 +137,7 @@ const AddEntryModal: React.FC<AddEntryModalProps> = ({ isOpen, onClose, onAddEnt
   let canSubmit = false;
   if(activeTab === EntryTypeEnum.NOTE) canSubmit = !isContentEmpty;
   else if (activeTab === EntryTypeEnum.DAY_SEPARATOR) canSubmit = !!daySeparatorTitle.trim() && !!daySeparatorDate;
+  else if (activeTab === EntryTypeEnum.SEPARATOR) canSubmit = true; // Separator kann immer erstellt werden
 
   const categories = [
     { value: CategoryEnum.INFORMATION, label: 'Information', icon: getCategoryIcon(CategoryEnum.INFORMATION, 'w-4 h-4') },
@@ -146,9 +156,10 @@ const AddEntryModal: React.FC<AddEntryModalProps> = ({ isOpen, onClose, onAddEnt
           <button onClick={onClose} disabled={isSubmitting} className="p-1 rounded-full text-slate-400 hover:bg-slate-100 disabled:opacity-50"><XIcon /></button>
         </div>
         
-        <div className="p-2 bg-slate-100 mx-6 mt-6 rounded-lg grid grid-cols-2 gap-1">
+        <div className="p-2 bg-slate-100 mx-6 mt-6 rounded-lg grid grid-cols-3 gap-1">
             <button onClick={() => setActiveTab(EntryTypeEnum.NOTE)} className={`w-full py-2 text-sm font-semibold rounded-md transition-colors flex items-center justify-center gap-1.5 ${activeTab === EntryTypeEnum.NOTE ? 'bg-white shadow-sm text-blue-600' : 'text-slate-600 hover:bg-slate-200'}`}><FileTextIcon className="w-4 h-4" /> Notiz</button>
             <button onClick={() => setActiveTab(EntryTypeEnum.DAY_SEPARATOR)} className={`w-full py-2 text-sm font-semibold rounded-md transition-colors flex items-center justify-center gap-1.5 ${activeTab === EntryTypeEnum.DAY_SEPARATOR ? 'bg-white shadow-sm text-blue-600' : 'text-slate-600 hover:bg-slate-200'}`}><CalendarIcon className="w-4 h-4" /> Tag</button>
+            <button onClick={() => setActiveTab(EntryTypeEnum.SEPARATOR)} className={`w-full py-2 text-sm font-semibold rounded-md transition-colors flex items-center justify-center gap-1.5 ${activeTab === EntryTypeEnum.SEPARATOR ? 'bg-white shadow-sm text-blue-600' : 'text-slate-600 hover:bg-slate-200'}`}><MinusIcon className="w-4 h-4" /> Trennlinie</button>
         </div>
 
         <form onSubmit={handleSubmit}>
@@ -245,6 +256,68 @@ const AddEntryModal: React.FC<AddEntryModalProps> = ({ isOpen, onClose, onAddEnt
                   </div>
                 </>
                         )}
+
+            {activeTab === EntryTypeEnum.SEPARATOR && (
+                <>
+                  <div>
+                    <label htmlFor="separatorTitle" className="block text-sm font-medium text-slate-700 mb-1">Titel (Optional)</label>
+                    <input 
+                      id="separatorTitle" 
+                      type="text" 
+                      value={separatorTitle} 
+                      onChange={(e) => setSeparatorTitle(e.target.value)} 
+                      placeholder="z.B. Aktivitäten am Vormittag" 
+                      className="w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500" 
+                    />
+                  </div>
+                  
+                  <div>
+                    <label htmlFor="separatorStyle" className="block text-sm font-medium text-slate-700 mb-1">Stil</label>
+                    <div className="grid grid-cols-3 gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setSeparatorStyle('line')}
+                        className={`p-3 rounded-lg border transition-all flex flex-col items-center gap-2 ${
+                          separatorStyle === 'line'
+                            ? 'border-blue-500 bg-blue-50 text-blue-700'
+                            : 'border-slate-300 hover:border-slate-400'
+                        }`}
+                      >
+                        <div className="w-8 h-0.5 bg-current"></div>
+                        <span className="text-xs font-medium">Einfache Linie</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setSeparatorStyle('section')}
+                        className={`p-3 rounded-lg border transition-all flex flex-col items-center gap-2 ${
+                          separatorStyle === 'section'
+                            ? 'border-blue-500 bg-blue-50 text-blue-700'
+                            : 'border-slate-300 hover:border-slate-400'
+                        }`}
+                      >
+                        <div className="w-8 h-1 bg-current rounded"></div>
+                        <span className="text-xs font-medium">Abschnitt</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setSeparatorStyle('divider')}
+                        className={`p-3 rounded-lg border transition-all flex flex-col items-center gap-2 ${
+                          separatorStyle === 'divider'
+                            ? 'border-blue-500 bg-blue-50 text-blue-700'
+                            : 'border-slate-300 hover:border-slate-400'
+                        }`}
+                      >
+                        <div className="w-8 h-0.5 bg-current relative">
+                          <div className="absolute inset-0 flex items-center justify-center">
+                            <div className="w-2 h-2 bg-current rounded-full"></div>
+                          </div>
+                        </div>
+                        <span className="text-xs font-medium">Trenner</span>
+                      </button>
+                    </div>
+                  </div>
+                </>
+            )}
 
             {activeTab === EntryTypeEnum.DAY_SEPARATOR && (
                 <>

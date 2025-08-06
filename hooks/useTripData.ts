@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
-import type { Trip, Day, Entry, InfoEntry, NoteEntry, Attachment, DaySeparatorEntry } from '../types';
+import type { Trip, Day, Entry, InfoEntry, NoteEntry, Attachment, DaySeparatorEntry, SeparatorEntry } from '../types';
 import { EntryTypeEnum, CategoryEnum } from '../types';
 // Funktion zum Abrufen von URL-Metadaten über Netlify Function
 const fetchUrlMetadata = async (url: string) => {
@@ -179,7 +179,7 @@ export const useTripData = (tripId: string = 'andalusien-2025') => {
     });
   }, [trip]);
 
-  const addEntry = useCallback(async (dayId: string, type: EntryTypeEnum, data: { url?: string; content?: string; imageDataUrl?: string; attachment?: Attachment; title?: string; description?: string; date?: string; category?: CategoryEnum; }) => {
+  const addEntry = useCallback(async (dayId: string, type: EntryTypeEnum, data: { url?: string; content?: string; imageDataUrl?: string; attachment?: Attachment; title?: string; description?: string; date?: string; category?: CategoryEnum; style?: 'line' | 'section' | 'divider'; }) => {
     if (!trip) return;
     
     const tempId = `temp-${Date.now()}`;
@@ -192,6 +192,46 @@ export const useTripData = (tripId: string = 'andalusien-2025') => {
         title: data.title,
         date: data.date,
       } as DaySeparatorEntry;
+      
+      setTrip(prevTrip => {
+        if (!prevTrip) return prevTrip;
+        
+        // Spezielle Behandlung für "Vor dem Urlaub" Station
+        if (dayId === 'before-trip') {
+          // Prüfe, ob die Station bereits existiert
+          const beforeTripExists = prevTrip.days.some(day => day.id === 'before-trip');
+          
+          if (!beforeTripExists) {
+            // Erstelle die Station und füge den Eintrag hinzu
+            const beforeTripDay = {
+              id: 'before-trip',
+              title: 'Vor dem Urlaub',
+              duration: 0,
+              color: 'gray',
+              entries: [newEntry]
+            };
+            
+            return {
+              ...prevTrip,
+              days: [beforeTripDay, ...prevTrip.days]
+            };
+          }
+        }
+        
+        return {
+          ...prevTrip,
+          days: prevTrip.days.map(day => 
+            day.id === dayId ? { ...day, entries: [...day.entries, newEntry] } : day
+          )
+        };
+      });
+    } else if (type === EntryTypeEnum.SEPARATOR) {
+      newEntry = {
+        id: tempId,
+        type: EntryTypeEnum.SEPARATOR,
+        title: data.title,
+        style: data.style || 'line',
+      } as SeparatorEntry;
       
       setTrip(prevTrip => {
         if (!prevTrip) return prevTrip;
