@@ -14,6 +14,8 @@ interface AddEntryModalProps {
 }
 
 const AddEntryModal: React.FC<AddEntryModalProps> = ({ isOpen, onClose, onAddEntry, station, tripStartDate, allDays }) => {
+  const [mapsMetadata, setMapsMetadata] = useState<{ title: string; description: string; imageUrl?: string } | null>(null);
+  const [mapsLoading, setMapsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<EntryTypeEnum>(EntryTypeEnum.NOTE);
   const [title, setTitle] = useState('');
   const [url, setUrl] = useState('');
@@ -97,6 +99,28 @@ const AddEntryModal: React.FC<AddEntryModalProps> = ({ isOpen, onClose, onAddEnt
       reader.readAsDataURL(file);
     }
   };
+
+  // Google Maps URL detection
+  useEffect(() => {
+    if (!url) { setMapsMetadata(null); return; }
+    const mapsRegex = /(?:google\.[a-z.]+\/maps|maps\.app\.goo\.gl)/i;
+    if (!mapsRegex.test(url)) { setMapsMetadata(null); return; }
+
+    let cancelled = false;
+    setMapsLoading(true);
+    fetch(`/.netlify/functions/maps-metadata?url=${encodeURIComponent(url)}`)
+      .then(res => res.ok ? res.json() : null)
+      .then(data => {
+        if (cancelled) return;
+        setMapsLoading(false);
+        if (data && data.title) {
+          setMapsMetadata(data);
+          if (!title) setTitle(data.title);
+        }
+      })
+      .catch(() => { if (!cancelled) { setMapsLoading(false); } });
+    return () => { cancelled = true; };
+  }, [url]);
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -210,6 +234,22 @@ const AddEntryModal: React.FC<AddEntryModalProps> = ({ isOpen, onClose, onAddEnt
                       className="w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500" 
                     />
                   </div>
+
+                  {mapsLoading && (
+                    <div className="flex items-center gap-2 text-sm text-slate-500"><span className="animate-spin inline-block w-4 h-4 border-2 border-current border-t-transparent rounded-full"></span> Lade Google-Maps-Daten...</div>
+                  )}
+
+                  {mapsMetadata && (
+                    <div className="p-3 mt-2 border border-slate-200 rounded-lg bg-slate-50 space-y-2">
+                      {mapsMetadata.imageUrl && <img src={mapsMetadata.imageUrl} alt={mapsMetadata.title} className="w-full h-auto rounded" />}
+                      <div className="font-semibold text-slate-800">{mapsMetadata.title}</div>
+                      <div className="text-xs text-slate-600">{mapsMetadata.description}</div>
+                      <button type="button" onClick={() => {
+                        if (!content) setContent(mapsMetadata.description);
+                        if (!imageDataUrl && mapsMetadata.imageUrl) setImageDataUrl(mapsMetadata.imageUrl);
+                      }} className="mt-2 px-3 py-1.5 bg-blue-600 text-white rounded-md text-sm hover:bg-blue-700">Daten übernehmen</button>
+                    </div>
+                  )}
 
                   <div>
                     <label htmlFor="content" className="block text-sm font-medium text-slate-700 mb-1">Inhalt *</label>
