@@ -1,46 +1,45 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { EntryTypeEnum, Attachment, Day, DaySeparatorEntry } from '../types';
-import { XIcon, LinkIcon, FileTextIcon, UploadCloudIcon, PaperclipIcon, CalendarIcon } from './Icons';
+import { EntryTypeEnum, CategoryEnum, Attachment, Day, DaySeparatorEntry } from '../types';
+import { XIcon, InfoIcon, FileTextIcon, UploadCloudIcon, PaperclipIcon, CalendarIcon, getCategoryIcon } from './Icons';
 import Spinner from './Spinner';
 import RichTextEditor from './RichTextEditor';
 
 interface AddEntryModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onAddEntry: (type: EntryTypeEnum, data: { url?: string; content?: string; imageDataUrl?: string; attachment?: Attachment; title?: string; date?: string; }) => Promise<void>;
+  onAddEntry: (type: EntryTypeEnum, data: { url?: string; content?: string; imageDataUrl?: string; attachment?: Attachment; title?: string; date?: string; category?: CategoryEnum; }) => Promise<void>;
   station: Day | null;
   tripStartDate: string;
   allDays: Day[];
 }
 
 const AddEntryModal: React.FC<AddEntryModalProps> = ({ isOpen, onClose, onAddEntry, station, tripStartDate, allDays }) => {
-  const [activeTab, setActiveTab] = useState<EntryTypeEnum>(EntryTypeEnum.LINK);
+  const [activeTab, setActiveTab] = useState<EntryTypeEnum>(EntryTypeEnum.NOTE);
+  const [title, setTitle] = useState('');
   const [url, setUrl] = useState('');
-  const [linkTitle, setLinkTitle] = useState('');
-  const [linkDescription, setLinkDescription] = useState('');
-  const [note, setNote] = useState('');
+  const [content, setContent] = useState('');
+  const [category, setCategory] = useState<CategoryEnum>(CategoryEnum.INFORMATION);
   const [imageDataUrl, setImageDataUrl] = useState<string | null>(null);
   const [attachment, setAttachment] = useState<Attachment | null>(null);
   const [daySeparatorTitle, setDaySeparatorTitle] = useState('');
   const [daySeparatorDate, setDaySeparatorDate] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const linkFileInputRef = useRef<HTMLInputElement>(null);
-  const noteFileInputRef = useRef<HTMLInputElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [availableDates, setAvailableDates] = useState<string[]>([]);
   
   useEffect(() => {
     if (isOpen) {
       // Reset state
+      setTitle('');
       setUrl('');
-      setLinkTitle('');
-      setLinkDescription('');
-      setNote('');
+      setContent('');
+      setCategory(CategoryEnum.INFORMATION);
       setImageDataUrl(null);
       setAttachment(null);
       setDaySeparatorTitle('');
       setDaySeparatorDate('');
-      setActiveTab(EntryTypeEnum.LINK);
+      setActiveTab(EntryTypeEnum.NOTE);
       setIsSubmitting(false);
 
       // Calculate available dates for the station based on fixed time ranges
@@ -86,16 +85,7 @@ const AddEntryModal: React.FC<AddEntryModalProps> = ({ isOpen, onClose, onAddEnt
 
   if (!isOpen) return null;
 
-  const handleLinkFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => { setImageDataUrl(reader.result as string); };
-      reader.readAsDataURL(file);
-    }
-  };
-
-  const handleNoteFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       const reader = new FileReader();
@@ -104,20 +94,29 @@ const AddEntryModal: React.FC<AddEntryModalProps> = ({ isOpen, onClose, onAddEnt
     }
   };
 
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => { setImageDataUrl(reader.result as string); };
+      reader.readAsDataURL(file);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
-    const isNoteEmpty = !note || note.replace(/(<p><br><\/p>|\s)/g, '').length === 0;
+    const isContentEmpty = !content || content.replace(/(<p><br><\/p>|\s)/g, '').length === 0;
 
-    if (activeTab === EntryTypeEnum.LINK && url.trim()) {
-      await onAddEntry(EntryTypeEnum.LINK, { 
-        url: url.trim(), 
-        title: linkTitle.trim() || undefined,
-        description: linkDescription.trim() || undefined,
-        imageDataUrl: imageDataUrl || undefined 
+    if (activeTab === EntryTypeEnum.NOTE && !isContentEmpty) {
+      await onAddEntry(EntryTypeEnum.NOTE, { 
+        title: title.trim() || undefined,
+        content: content, 
+        url: url.trim() || undefined,
+        category: category,
+        attachment: attachment || undefined,
+        imageDataUrl: imageDataUrl || undefined
       });
-    } else if (activeTab === EntryTypeEnum.NOTE && !isNoteEmpty) {
-      await onAddEntry(EntryTypeEnum.NOTE, { content: note, attachment: attachment || undefined });
     } else if (activeTab === EntryTypeEnum.DAY_SEPARATOR && daySeparatorTitle.trim() && daySeparatorDate) {
       await onAddEntry(EntryTypeEnum.DAY_SEPARATOR, { title: daySeparatorTitle.trim(), date: daySeparatorDate });
     } else {
@@ -125,12 +124,19 @@ const AddEntryModal: React.FC<AddEntryModalProps> = ({ isOpen, onClose, onAddEnt
     }
   };
   
-  const isNoteEmpty = !note || note.replace(/(<p><br><\/p>|\s)/g, '').length === 0;
+  const isContentEmpty = !content || content.replace(/(<p><br><\/p>|\s)/g, '').length === 0;
   let canSubmit = false;
-  if(activeTab === EntryTypeEnum.LINK) canSubmit = !!url.trim();
-  else if (activeTab === EntryTypeEnum.NOTE) canSubmit = !isNoteEmpty;
+  if(activeTab === EntryTypeEnum.NOTE) canSubmit = !isContentEmpty;
   else if (activeTab === EntryTypeEnum.DAY_SEPARATOR) canSubmit = !!daySeparatorTitle.trim() && !!daySeparatorDate;
 
+  const categories = [
+    { value: CategoryEnum.INFORMATION, label: 'Information', icon: getCategoryIcon(CategoryEnum.INFORMATION, 'w-4 h-4') },
+    { value: CategoryEnum.ROUTE, label: 'Route', icon: getCategoryIcon(CategoryEnum.ROUTE, 'w-4 h-4') },
+    { value: CategoryEnum.AUSFLUG, label: 'Ausflug', icon: getCategoryIcon(CategoryEnum.AUSFLUG, 'w-4 h-4') },
+    { value: CategoryEnum.ESSEN, label: 'Essen', icon: getCategoryIcon(CategoryEnum.ESSEN, 'w-4 h-4') },
+    { value: CategoryEnum.UEBERNACHTEN, label: 'Übernachten', icon: getCategoryIcon(CategoryEnum.UEBERNACHTEN, 'w-4 h-4') },
+    { value: CategoryEnum.FRAGE, label: 'Frage', icon: getCategoryIcon(CategoryEnum.FRAGE, 'w-4 h-4') },
+  ];
 
   return (
     <div className="fixed inset-0 bg-black/30 backdrop-blur-sm z-50 flex items-center justify-center p-4">
@@ -140,20 +146,50 @@ const AddEntryModal: React.FC<AddEntryModalProps> = ({ isOpen, onClose, onAddEnt
           <button onClick={onClose} disabled={isSubmitting} className="p-1 rounded-full text-slate-400 hover:bg-slate-100 disabled:opacity-50"><XIcon /></button>
         </div>
         
-        <div className="p-2 bg-slate-100 mx-6 mt-6 rounded-lg grid grid-cols-3 gap-1">
-            <button onClick={() => setActiveTab(EntryTypeEnum.LINK)} className={`w-full py-2 text-sm font-semibold rounded-md transition-colors flex items-center justify-center gap-1.5 ${activeTab === EntryTypeEnum.LINK ? 'bg-white shadow-sm text-blue-600' : 'text-slate-600 hover:bg-slate-200'}`}><LinkIcon className="w-4 h-4" /> Link</button>
+        <div className="p-2 bg-slate-100 mx-6 mt-6 rounded-lg grid grid-cols-2 gap-1">
             <button onClick={() => setActiveTab(EntryTypeEnum.NOTE)} className={`w-full py-2 text-sm font-semibold rounded-md transition-colors flex items-center justify-center gap-1.5 ${activeTab === EntryTypeEnum.NOTE ? 'bg-white shadow-sm text-blue-600' : 'text-slate-600 hover:bg-slate-200'}`}><FileTextIcon className="w-4 h-4" /> Notiz</button>
             <button onClick={() => setActiveTab(EntryTypeEnum.DAY_SEPARATOR)} className={`w-full py-2 text-sm font-semibold rounded-md transition-colors flex items-center justify-center gap-1.5 ${activeTab === EntryTypeEnum.DAY_SEPARATOR ? 'bg-white shadow-sm text-blue-600' : 'text-slate-600 hover:bg-slate-200'}`}><CalendarIcon className="w-4 h-4" /> Tag</button>
         </div>
 
         <form onSubmit={handleSubmit}>
           <div className="p-6 space-y-4 max-h-[60vh] overflow-y-auto">
-            {activeTab === EntryTypeEnum.LINK && (
-                // Link form
+            {activeTab === EntryTypeEnum.NOTE && (
                 <>
-                  <input type="file" ref={linkFileInputRef} onChange={handleLinkFileChange} accept="image/*" className="hidden" />
                   <div>
-                    <label htmlFor="url" className="block text-sm font-medium text-slate-700 mb-1">Webseiten-URL</label>
+                    <label htmlFor="title" className="block text-sm font-medium text-slate-700 mb-1">Titel (Optional)</label>
+                    <input 
+                      id="title" 
+                      type="text" 
+                      value={title} 
+                      onChange={(e) => setTitle(e.target.value)} 
+                      placeholder="z.B. Restaurant Empfehlung" 
+                      className="w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500" 
+                    />
+                  </div>
+                  
+                  <div>
+                    <label htmlFor="category" className="block text-sm font-medium text-slate-700 mb-1">Kategorie</label>
+                    <div className="grid grid-cols-3 gap-2">
+                      {categories.map((cat) => (
+                        <button
+                          key={cat.value}
+                          type="button"
+                          onClick={() => setCategory(cat.value)}
+                          className={`p-2 rounded-lg border transition-all flex flex-col items-center gap-1 ${
+                            category === cat.value 
+                              ? 'border-blue-500 bg-blue-50 text-blue-700' 
+                              : 'border-slate-300 hover:border-slate-400'
+                          }`}
+                        >
+                          {cat.icon}
+                          <span className="text-xs font-medium">{cat.label}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <label htmlFor="url" className="block text-sm font-medium text-slate-700 mb-1">URL (Optional)</label>
                     <input 
                       id="url" 
                       type="url" 
@@ -161,33 +197,17 @@ const AddEntryModal: React.FC<AddEntryModalProps> = ({ isOpen, onClose, onAddEnt
                       onChange={(e) => setUrl(e.target.value)} 
                       placeholder="https://example.com" 
                       className="w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500" 
-                      autoFocus 
                     />
                   </div>
+
                   <div>
-                    <label htmlFor="linkTitle" className="block text-sm font-medium text-slate-700 mb-1">Titel (Optional)</label>
-                    <input 
-                      id="linkTitle" 
-                      type="text" 
-                      value={linkTitle} 
-                      onChange={(e) => setLinkTitle(e.target.value)} 
-                      placeholder="z.B. Offizielle Tourismusseite von Cádiz" 
-                      className="w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500" 
-                    />
+                    <label htmlFor="content" className="block text-sm font-medium text-slate-700 mb-1">Inhalt *</label>
+                    <RichTextEditor value={content} onChange={setContent} />
                   </div>
+
                   <div>
-                    <label htmlFor="linkDescription" className="block text-sm font-medium text-slate-700 mb-1">Beschreibung (Optional)</label>
-                    <textarea 
-                      id="linkDescription" 
-                      value={linkDescription} 
-                      onChange={(e) => setLinkDescription(e.target.value)} 
-                      placeholder="z.B. Informationen zu Sehenswürdigkeiten, Restaurants und Aktivitäten" 
-                      rows={3}
-                      className="w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 resize-none" 
-                    />
-                  </div>
-                  <div>
-                    <span className="block text-sm font-medium text-slate-700 mb-1">Eigenes Bild (Optional)</span>
+                    <span className="block text-sm font-medium text-slate-700 mb-1">Bild (Optional)</span>
+                    <input type="file" ref={fileInputRef} onChange={handleImageChange} accept="image/*" className="hidden" />
                     {imageDataUrl ? (
                       <div className="relative">
                         <img src={imageDataUrl} alt="Vorschau" className="w-full h-auto object-cover rounded-md" />
@@ -196,39 +216,78 @@ const AddEntryModal: React.FC<AddEntryModalProps> = ({ isOpen, onClose, onAddEnt
                         </button>
                       </div>
                     ) : (
-                      <button type="button" onClick={() => linkFileInputRef.current?.click()} className="w-full flex flex-col items-center justify-center gap-2 py-4 border-2 border-dashed border-slate-300 rounded-lg text-slate-500 hover:bg-slate-100 hover:border-slate-400 transition-all">
+                      <button type="button" onClick={() => fileInputRef.current?.click()} className="w-full flex flex-col items-center justify-center gap-2 py-4 border-2 border-dashed border-slate-300 rounded-lg text-slate-500 hover:bg-slate-100 hover:border-slate-400 transition-all">
                         <UploadCloudIcon className="w-6 h-6" />
                         <span className="text-sm">Bild hochladen</span>
                       </button>
                     )}
                   </div>
+
+                  <div>
+                    <span className="block text-sm font-medium text-slate-700 mb-1">Anhang (Optional)</span>
+                    <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" />
+                    {attachment ? (
+                      <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
+                        <div className="flex items-center gap-2">
+                          <PaperclipIcon className="w-4 h-4 text-slate-500" />
+                          <span className="text-sm text-slate-700">{attachment.name}</span>
+                        </div>
+                        <button type="button" onClick={() => setAttachment(null)} className="p-1 text-slate-400 hover:text-slate-600">
+                          <XIcon className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ) : (
+                      <button type="button" onClick={() => fileInputRef.current?.click()} className="w-full flex flex-col items-center justify-center gap-2 py-4 border-2 border-dashed border-slate-300 rounded-lg text-slate-500 hover:bg-slate-100 hover:border-slate-400 transition-all">
+                        <PaperclipIcon className="w-6 h-6" />
+                        <span className="text-sm">Datei anhängen</span>
+                      </button>
+                    )}
+                  </div>
                 </>
             )}
-            {activeTab === EntryTypeEnum.NOTE && (
-                // Note form
-                <><input type="file" ref={noteFileInputRef} onChange={handleNoteFileChange} className="hidden" /><div><label htmlFor="note" className="block text-sm font-medium text-slate-700 mb-1">Deine Notiz</label><RichTextEditor value={note} onChange={setNote} placeholder="z.B. Tickets für die Alhambra buchen..." /></div><div><span className="block text-sm font-medium text-slate-700 mb-1">Anhang (Optional)</span>{attachment ? (<div className="relative p-2 border border-slate-200 rounded-md">{attachment.mimeType.startsWith('image/') ? <img src={attachment.url} alt="Anhang Vorschau" className="w-full h-auto object-cover rounded-md" /> : <div className="flex items-center gap-2"><PaperclipIcon className="w-5 h-5 text-slate-500"/><span className="text-sm text-slate-700 truncate">{attachment.name}</span></div>}<button type="button" onClick={() => setAttachment(null)} className="absolute top-1 right-1 p-1 bg-black/50 text-white rounded-full hover:bg-black/70"><XIcon className="w-3 h-3" /></button></div>) : (<button type="button" onClick={() => noteFileInputRef.current?.click()} className="w-full flex flex-col items-center justify-center gap-2 py-4 border-2 border-dashed border-slate-300 rounded-lg text-slate-500 hover:bg-slate-100 hover:border-slate-400 transition-all"><UploadCloudIcon className="w-6 h-6" /><span className="text-sm">Datei oder Bild hochladen</span></button>)}</div></>
-            )}
+
             {activeTab === EntryTypeEnum.DAY_SEPARATOR && (
-                <div className="space-y-4">
+                <>
                   <div>
-                    <label htmlFor="daySeparatorTitle" className="block text-sm font-medium text-slate-700 mb-1">Titel des Tages</label>
-                    <input id="daySeparatorTitle" type="text" value={daySeparatorTitle} onChange={(e) => setDaySeparatorTitle(e.target.value)} placeholder="z.B. Ankunft & Erkundung" className="w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500" autoFocus />
+                    <label htmlFor="daySeparatorTitle" className="block text-sm font-medium text-slate-700 mb-1">Titel *</label>
+                    <input 
+                      id="daySeparatorTitle" 
+                      type="text" 
+                      value={daySeparatorTitle} 
+                      onChange={(e) => setDaySeparatorTitle(e.target.value)} 
+                      placeholder="z.B. Anreise in Cádiz" 
+                      className="w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500" 
+                      autoFocus 
+                    />
                   </div>
                   <div>
-                    <label htmlFor="daySeparatorDate" className="block text-sm font-medium text-slate-700 mb-1">Datum</label>
-                    <select id="daySeparatorDate" value={daySeparatorDate} onChange={(e) => setDaySeparatorDate(e.target.value)} disabled={availableDates.length === 0} className="w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 bg-white disabled:bg-slate-100">
-                      {availableDates.length > 0 ? (
-                        availableDates.map(date => <option key={date} value={date}>{new Date(date + 'T00:00:00').toLocaleDateString('de-DE', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</option>)
-                      ) : (
-                        <option>Keine verfügbaren Daten</option>
-                      )}
+                    <label htmlFor="daySeparatorDate" className="block text-sm font-medium text-slate-700 mb-1">Datum *</label>
+                    <select 
+                      id="daySeparatorDate" 
+                      value={daySeparatorDate} 
+                      onChange={(e) => setDaySeparatorDate(e.target.value)} 
+                      className="w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                    >
+                      <option value="">Datum auswählen</option>
+                      {availableDates.map(date => (
+                        <option key={date} value={date}>
+                          {new Date(date).toLocaleDateString('de-DE', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                        </option>
+                      ))}
                     </select>
                   </div>
-                </div>
+                </>
             )}
           </div>
-          <div className="px-6 py-4 bg-slate-50 rounded-b-xl flex justify-end">
-            <button type="submit" disabled={!canSubmit || isSubmitting} className="w-28 flex justify-center px-4 py-2 bg-blue-600 text-white font-semibold rounded-md shadow-sm hover:bg-blue-700 disabled:bg-blue-300 disabled:cursor-not-allowed transition-colors">{isSubmitting ? <Spinner /> : 'Erstellen'}</button>
+          
+          <div className="flex justify-end gap-3 p-6 border-t border-slate-200">
+            <button type="button" onClick={onClose} disabled={isSubmitting} className="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-md hover:bg-slate-50 disabled:opacity-50">
+              Abbrechen
+            </button>
+            <button type="submit" disabled={!canSubmit || isSubmitting} className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2">
+              {isSubmitting ? <Spinner size="sm" /> : null}
+              Erstellen
+            </button>
           </div>
         </form>
       </div>

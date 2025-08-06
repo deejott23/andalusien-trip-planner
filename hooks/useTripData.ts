@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect } from 'react';
-import type { Trip, Day, Entry, LinkEntry, NoteEntry, Attachment, DaySeparatorEntry } from '../types';
-import { EntryTypeEnum } from '../types';
+import type { Trip, Day, Entry, InfoEntry, NoteEntry, Attachment, DaySeparatorEntry } from '../types';
+import { EntryTypeEnum, CategoryEnum } from '../types';
 // Funktion zum Abrufen von URL-Metadaten über Netlify Function
 const fetchUrlMetadata = async (url: string) => {
   try {
@@ -22,162 +22,21 @@ const initialStations: Day[] = [
     title: 'Cádiz',
     duration: 4,
     color: 'orange',
-    entries: [
-       {
-        id: 'day-sep-1',
-        type: EntryTypeEnum.DAY_SEPARATOR,
-        title: 'Tag 1: Ankunft & Erkundung',
-        date: '2025-08-27',
-      },
-      {
-        id: 'entry-cadiz-1',
-        type: EntryTypeEnum.NOTE,
-        content: '<p><b>Ankunft in Cádiz.</b> Hotel-Check-in und erster Spaziergang durch die historische Altstadt. Wir sollten uns die Kathedrale und den Torre Tavira ansehen.</p>',
-        reactions: { likes: 1, dislikes: 0, userReaction: 'like' },
-      },
-      {
-        id: 'entry-cadiz-2',
-        type: EntryTypeEnum.LINK,
-        url: 'https://www.spain.info/de/reiseziel/cadiz/',
-        title: 'Cádiz: Sehenswürdigkeiten & Highlights',
-        description: 'Offizieller Tourismus-Guide für Cádiz. Entdecke die älteste Stadt Westeuropas.',
-        imageUrl: 'https://images.unsplash.com/photo-1559827260-dc66d52bef19?w=400&h=300&fit=crop',
-        domain: 'spain.info',
-        status: 'loaded',
-        reactions: { likes: 0, dislikes: 0, userReaction: null },
-      },
-       {
-        id: 'day-sep-2',
-        type: EntryTypeEnum.DAY_SEPARATOR,
-        title: 'Tag 3: Kulinarik & Kultur',
-        date: '2025-08-29',
-      },
-      {
-        id: 'entry-cadiz-3',
-        type: EntryTypeEnum.LINK,
-        url: 'https://devourcadizfoodtours.com/blog/best-tapas-in-cadiz/',
-        title: 'Die besten Tapas-Bars in Cádiz',
-        description: 'Ein Guide zu den authentischsten und leckersten Tapas, die man in Cádiz finden kann.',
-        imageUrl: 'https://images.unsplash.com/photo-1565299624946-b28f40a0ca4b?w=400&h=300&fit=crop',
-        domain: 'devourcadizfoodtours.com',
-        status: 'loaded',
-        reactions: { likes: 0, dislikes: 0, userReaction: null },
-      },
-      {
-        id: 'entry-cadiz-4',
-        type: EntryTypeEnum.NOTE,
-        content: '<p>Plan für heute:<ul><li>Morgens: Besuch des Mercado Central</li><li>Nachmittags: Entspannen am Strand La Caleta</li><li>Abends: Flamenco-Show</li></ul></p>',
-        reactions: { likes: 0, dislikes: 0, userReaction: null },
-      }
-    ],
+    entries: [],
   },
   {
     id: 'station-marbella',
     title: 'Marbella',
     duration: 4,
     color: 'blue',
-    entries: [
-        {
-        id: 'day-sep-3',
-        type: EntryTypeEnum.DAY_SEPARATOR,
-        title: 'Tag 5: Marbella & Puerto Banús',
-        date: '2025-08-31',
-      },
-      {
-        id: 'entry-marbella-1',
-        type: EntryTypeEnum.NOTE,
-        content: '<p><b>Fahrt von Cádiz nach Marbella.</b> Check-in im Hotel und erster Ausflug zum berühmten Hafen Puerto Banús.</p>',
-         reactions: { likes: 0, dislikes: 0, userReaction: null },
-      },
-      {
-        id: 'entry-marbella-2',
-        type: EntryTypeEnum.LINK,
-        url: 'https://www.marbella.es/turismo/',
-        title: 'Offizielle Tourismusseite von Marbella',
-        description: 'Informationen zu Stränden, Altstadt und Aktivitäten in Marbella.',
-        imageUrl: 'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=400&h=300&fit=crop',
-        domain: 'marbella.es',
-        status: 'loaded',
-        reactions: { likes: 0, dislikes: 0, userReaction: null },
-      },
-       {
-        id: 'entry-marbella-3',
-        type: EntryTypeEnum.NOTE,
-        content: '<p>Tagesausflug nach Ronda geplant. Die Puente Nuevo Brücke soll atemberaubend sein.</p>',
-        reactions: { likes: 0, dislikes: 0, userReaction: null },
-      },
-      {
-        id: 'entry-marbella-4',
-        type: EntryTypeEnum.LINK,
-        url: 'https://www.tripadvisor.de/Attractions-g187439-Activities-c42-Marbella_Costa_del_Sol_Province_of_Malaga_Andalucia.html',
-        title: 'Wanderwege in der Nähe von Marbella',
-        description: 'Die besten Routen zum Wandern in der Sierra de las Nieves.',
-        imageUrl: 'https://images.unsplash.com/photo-1551632811-561732d1e306?w=400&h=300&fit=crop',
-        domain: 'tripadvisor.de',
-        status: 'loaded',
-        reactions: { likes: 0, dislikes: 0, userReaction: null },
-      }
-    ],
+    entries: [],
   },
   {
     id: 'station-torrox',
     title: 'Torrox',
-    duration: 7, 
+    duration: 7,
     color: 'green',
-    entries: [
-        {
-        id: 'day-sep-4',
-        type: EntryTypeEnum.DAY_SEPARATOR,
-        title: 'Tag 9: Ankunft in Torrox',
-        date: '2025-09-04',
-      },
-      {
-        id: 'entry-torrox-1',
-        type: EntryTypeEnum.NOTE,
-        content: '<p><b>Die letzte Station unserer Reise.</b> Zeit zum Entspannen am Strand und um die "weißen Dörfer" der Axarquía zu erkunden.</p>',
-        reactions: { likes: 0, dislikes: 0, userReaction: null },
-      },
-      {
-        id: 'entry-torrox-2',
-        type: EntryTypeEnum.LINK,
-        url: 'https://www.andalusien-tourismus.com/de/torrox',
-        title: 'Torrox - Das beste Klima Europas',
-        description: 'Informationen über Torrox Pueblo und Torrox Costa.',
-        imageUrl: 'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=400&h=300&fit=crop',
-        domain: 'andalusien-tourismus.com',
-        status: 'loaded',
-        reactions: { likes: 0, dislikes: 0, userReaction: null },
-      },
-      {
-        id: 'day-sep-5',
-        type: EntryTypeEnum.DAY_SEPARATOR,
-        title: 'Tag 11: Ausflug nach Nerja',
-        date: '2025-09-06',
-      },
-       {
-        id: 'entry-torrox-3',
-        type: EntryTypeEnum.LINK,
-        url: 'https://www.turismonerja.com/de/hoehlen-von-nerja/',
-        title: 'Höhlen von Nerja',
-        description: 'Ein beeindruckendes Naturwunder, nur eine kurze Fahrt von Torrox entfernt.',
-        imageUrl: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400&h=300&fit=crop',
-        domain: 'turismonerja.com',
-        status: 'loaded',
-        reactions: { likes: 0, dislikes: 0, userReaction: null },
-      },
-       {
-        id: 'day-sep-6',
-        type: EntryTypeEnum.DAY_SEPARATOR,
-        title: 'Tag 15: Letzter Abend',
-        date: '2025-09-10',
-      },
-      {
-        id: 'entry-torrox-4',
-        type: EntryTypeEnum.NOTE,
-        content: '<p>Letztes Abendessen am Strand. Packen für den Rückflug morgen früh.</p>',
-        reactions: { likes: 0, dislikes: 0, userReaction: null },
-      }
-    ],
+    entries: [],
   },
 ];
 
@@ -320,81 +179,20 @@ export const useTripData = (tripId: string = 'andalusien-2025') => {
     });
   }, [trip]);
 
-  const addEntry = useCallback(async (dayId: string, type: EntryTypeEnum, data: { url?: string; content?: string; imageDataUrl?: string; attachment?: Attachment; title?: string; description?: string; date?: string; }) => {
+  const addEntry = useCallback(async (dayId: string, type: EntryTypeEnum, data: { url?: string; content?: string; imageDataUrl?: string; attachment?: Attachment; title?: string; description?: string; date?: string; category?: CategoryEnum; }) => {
     if (!trip) return;
     
+    const tempId = `temp-${Date.now()}`;
     let newEntry: Entry;
-    const tempId = `entry-${Date.now()}`;
-    
-    // Spezielle Behandlung für "Vor dem Urlaub" Station
-    if (dayId === 'before-trip') {
-      // Erstelle die "Vor dem Urlaub" Station, falls sie nicht existiert
-      const beforeTripDay = {
-        id: 'before-trip',
-        title: 'Vor dem Urlaub',
-        duration: 0,
-        color: 'gray',
-        entries: []
-      };
-      
-      // Füge die Station hinzu, falls sie nicht existiert
-      if (!trip.days.some(day => day.id === 'before-trip')) {
-        setTrip(prevTrip => {
-          if (!prevTrip) return prevTrip;
-          return {
-            ...prevTrip,
-            days: [beforeTripDay, ...prevTrip.days]
-          };
-        });
-      }
-    }
-    
-    if (type === EntryTypeEnum.DAY_SEPARATOR && data.title && data.date) {
-        newEntry = {
-            id: tempId,
-            type: EntryTypeEnum.DAY_SEPARATOR,
-            title: data.title,
-            date: data.date,
-        } as DaySeparatorEntry;
-        
-        setTrip(prevTrip => {
-            if (!prevTrip) return prevTrip;
-            return {
-                ...prevTrip,
-                days: prevTrip.days.map(day => {
-                    if (day.id !== dayId) return day;
-                    const newEntries = [...day.entries, newEntry];
-                    // Sort entries to keep day separators in chronological order
-                    newEntries.sort((a, b) => {
-                        if (a.type === EntryTypeEnum.DAY_SEPARATOR && b.type === EntryTypeEnum.DAY_SEPARATOR) {
-                            return new Date(a.date).getTime() - new Date(b.date).getTime();
-                        }
-                         if (a.type === EntryTypeEnum.DAY_SEPARATOR) return -1;
-                         if (b.type === EntryTypeEnum.DAY_SEPARATOR) return 1;
-                        return 0;
-                    });
-                    return { ...day, entries: newEntries };
-                })
-            };
-        });
-    }
-    else if (type === EntryTypeEnum.LINK && data.url) {
-      const url = data.url;
-      const domain = new URL(url).hostname.replace('www.', '');
-      
-      const loadingEntry: LinkEntry = {
-        id: tempId,
-        type: EntryTypeEnum.LINK,
-        url,
-        title: data.title || 'Lade Metadaten...',
-        description: data.description || url,
-        imageUrl: data.imageDataUrl,
-        domain,
-        status: 'loading',
-        reactions: { likes: 0, dislikes: 0, userReaction: null },
-      };
-      newEntry = loadingEntry;
 
+    if (type === EntryTypeEnum.DAY_SEPARATOR && data.title && data.date) {
+      newEntry = {
+        id: tempId,
+        type: EntryTypeEnum.DAY_SEPARATOR,
+        title: data.title,
+        date: data.date,
+      } as DaySeparatorEntry;
+      
       setTrip(prevTrip => {
         if (!prevTrip) return prevTrip;
         
@@ -427,34 +225,16 @@ export const useTripData = (tripId: string = 'andalusien-2025') => {
           )
         };
       });
-
-      try {
-        const metadata = await fetchUrlMetadata(url);
-        const finalEntry: LinkEntry = {
-          ...loadingEntry,
-          title: data.title || metadata.title || url,
-          description: data.description || metadata.description || '',
-          imageUrl: data.imageDataUrl || metadata.imageUrl,
-          status: 'loaded',
-        };
-        updateEntry(dayId, finalEntry);
-      } catch (error) {
-        console.error("Metadaten konnten nicht geladen werden:", error);
-        const errorEntry: LinkEntry = {
-          ...loadingEntry,
-          title: data.title || "Vorschau fehlgeschlagen",
-          description: data.description || url,
-          status: 'error',
-          imageUrl: data.imageDataUrl,
-        };
-        updateEntry(dayId, errorEntry);
-      }
     } else if (type === EntryTypeEnum.NOTE && data.content) {
       newEntry = {
         id: tempId,
         type: EntryTypeEnum.NOTE,
+        title: data.title,
         content: data.content,
+        url: data.url,
+        category: data.category || CategoryEnum.INFORMATION,
         attachment: data.attachment,
+        imageUrl: data.imageDataUrl,
         reactions: { likes: 0, dislikes: 0, userReaction: null },
       } as NoteEntry;
       
@@ -613,7 +393,7 @@ export const useTripData = (tripId: string = 'andalusien-2025') => {
             return {
               ...day,
               entries: day.entries.map(entry => {
-                if (entry.id === entryId && (entry.type === EntryTypeEnum.LINK || entry.type === EntryTypeEnum.NOTE)) {
+                if (entry.id === entryId && (entry.type === EntryTypeEnum.INFO || entry.type === EntryTypeEnum.NOTE)) {
                   const currentReactions = entry.reactions || { likes: 0, dislikes: 0, userReaction: null };
                   let { likes, dislikes, userReaction } = currentReactions;
                   const oldReaction = userReaction;

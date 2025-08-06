@@ -332,9 +332,9 @@ export default function App(): React.ReactNode {
           />
         </header>
         
-        <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
             <Header title={displayTrip?.title || ''} dateRange={displayTrip?.dateRange || ''} />
-            <div className="space-y-8 mt-8">
+            <div className="space-y-4 sm:space-y-8 mt-4 sm:mt-8">
                 {allDays.map((day, index) => (
                     <Day
                         key={day.id}
@@ -366,7 +366,7 @@ export default function App(): React.ReactNode {
                 ))}
             </div>
 
-          <div className="mt-8 pt-8 border-t border-slate-200/80 text-center">
+          <div className="mt-6 sm:mt-8 pt-6 sm:pt-8 border-t border-slate-200/80 text-center">
             <button
               onClick={() => setAddDayModalOpen(true)}
               className="inline-flex items-center gap-2 px-6 py-3 bg-white border border-slate-300 rounded-full text-slate-700 font-semibold hover:bg-slate-50 transition-colors shadow-sm"

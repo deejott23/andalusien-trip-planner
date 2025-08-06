@@ -1,8 +1,17 @@
 
 export enum EntryTypeEnum {
-  LINK = 'LINK',
+  INFO = 'INFO',
   NOTE = 'NOTE',
   DAY_SEPARATOR = 'DAY_SEPARATOR',
+}
+
+export enum CategoryEnum {
+  INFORMATION = 'INFORMATION',
+  ROUTE = 'ROUTE',
+  AUSFLUG = 'AUSFLUG',
+  ESSEN = 'ESSEN',
+  UEBERNACHTEN = 'UEBERNACHTEN',
+  FRAGE = 'FRAGE',
 }
 
 export interface Attachment {
@@ -17,22 +26,25 @@ export interface Reactions {
   userReaction: 'like' | 'dislike' | null;
 }
 
-export interface LinkEntry {
+export interface InfoEntry {
   id: string;
-  type: EntryTypeEnum.LINK;
-  url:string;
+  type: EntryTypeEnum.INFO;
   title: string;
-  description?: string;
+  content: string;
+  url?: string;
+  category: CategoryEnum;
   imageUrl?: string;
-  domain: string;
-  status: 'loading' | 'loaded' | 'error';
+  attachment?: Attachment;
   reactions?: Reactions;
 }
 
 export interface NoteEntry {
   id: string;
   type: EntryTypeEnum.NOTE;
+  title?: string;
   content: string;
+  url?: string;
+  category: CategoryEnum;
   attachment?: Attachment;
   reactions?: Reactions;
 }
@@ -44,7 +56,7 @@ export interface DaySeparatorEntry {
   date: string; // ISO 8601 format: YYYY-MM-DD
 }
 
-export type Entry = LinkEntry | NoteEntry | DaySeparatorEntry;
+export type Entry = InfoEntry | NoteEntry | DaySeparatorEntry;
 
 export interface Day {
   id: string;

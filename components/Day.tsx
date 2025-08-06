@@ -162,9 +162,9 @@ const Day: React.FC<DayProps> = (props) => {
   );
 
   return (
-    <section className={`relative group bg-white rounded-2xl shadow-md p-4 sm:p-6 border-l-4 ${borderColorClass}`}>
+    <section className={`relative group bg-white rounded-2xl shadow-md p-3 sm:p-6 border-l-4 ${borderColorClass}`}>
       <DayActions />
-      <div className="flex items-center gap-2 mb-4">
+      <div className="flex items-center gap-2 mb-3 sm:mb-4">
           {isEditingTitle ? (
                <input
                   type="text"
@@ -172,12 +172,12 @@ const Day: React.FC<DayProps> = (props) => {
                   onChange={(e) => setTitle(e.target.value)}
                   onBlur={handleTitleBlur}
                   onKeyDown={handleTitleKeyDown}
-                  className="text-2xl sm:text-3xl font-bold text-slate-800 bg-slate-100 border-b-2 border-blue-500 focus:outline-none w-full"
+                  className="text-xl sm:text-2xl lg:text-3xl font-bold text-slate-800 bg-slate-100 border-b-2 border-blue-500 focus:outline-none w-full"
                   autoFocus
               />
           ) : (
              <div className="flex items-center gap-2">
-                 <h2 className="text-2xl sm:text-3xl font-bold text-slate-800">
+                 <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold text-slate-800">
                     {day.title}
                 </h2>
                  <button
@@ -198,7 +198,7 @@ const Day: React.FC<DayProps> = (props) => {
           )}
       </div>
       
-      <div className="space-y-4 pt-4 border-t border-slate-100">
+      <div className="space-y-3 sm:space-y-4 pt-3 sm:pt-4 border-t border-slate-100">
         <DndContext
           sensors={sensors}
           collisionDetection={closestCenter}
@@ -225,14 +225,14 @@ const Day: React.FC<DayProps> = (props) => {
         </DndContext>
         
         {/* Prominente Plus-Schaltfläche - immer sichtbar */}
-        <div className="flex justify-center pt-4">
+        <div className="flex justify-center pt-3 sm:pt-4">
           <button
             onClick={onAddEntry}
-            className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white font-semibold rounded-full shadow-lg hover:bg-blue-700 hover:shadow-xl transition-all duration-200 transform hover:scale-105"
+            className="flex items-center gap-2 px-4 sm:px-6 py-2 sm:py-3 bg-blue-600 text-white font-semibold rounded-full shadow-lg hover:bg-blue-700 hover:shadow-xl transition-all duration-200 transform hover:scale-105"
             aria-label="Neuen Eintrag hinzufügen"
           >
-            <PlusIcon className="w-5 h-5" />
-            <span>Eintrag hinzufügen</span>
+            <PlusIcon className="w-4 h-4 sm:w-5 sm:h-5" />
+            <span className="text-sm sm:text-base">Eintrag hinzufügen</span>
           </button>
         </div>
       </div>
