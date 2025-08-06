@@ -12,6 +12,7 @@ import EditDaySeparatorModal from './components/EditDaySeparatorModal';
 import ConfirmModal from './components/ConfirmModal';
 import LoadingSpinner from './components/LoadingSpinner';
 import ImportModal from './components/ImportModal';
+import BackupPanel from './components/BackupPanel';
 
 import { PlusIcon } from './components/Icons';
 
@@ -42,6 +43,7 @@ export default function App(): React.ReactNode {
   const [editDaySeparatorModalState, setEditDaySeparatorModalState] = useState<{ isOpen: boolean; entry: DaySeparatorEntry | null }>({ isOpen: false, entry: null });
   const [confirmModalState, setConfirmModalState] = useState<{ isOpen: boolean; title: string; message: string; onConfirm: () => void }>({ isOpen: false, title: '', message: '', onConfirm: () => {} });
   const [importModalState, setImportModalState] = useState<{ isOpen: boolean; file: File | null }>({ isOpen: false, file: null });
+  const [showBackupPanel, setShowBackupPanel] = useState(false);
   
   const [activeDayEntryId, setActiveDayEntryId] = useState<string | null>(null);
   const entryRefs = useRef<Map<string, HTMLElement>>(new Map());
@@ -373,7 +375,7 @@ export default function App(): React.ReactNode {
                 ))}
             </div>
 
-          <div className="mt-6 sm:mt-8 pt-6 sm:pt-8 border-t border-slate-200/80 text-center space-y-4">
+          <div className="mt-6 sm:mt-8 pt-6 sm:pt-8 border-t border-slate-200/80 text-center space-y-4 hidden">
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <button
                 onClick={() => setAddDayModalOpen(true)}
@@ -434,8 +436,13 @@ export default function App(): React.ReactNode {
               <div>🛡️ <strong>Sicherheit:</strong> Größenprüfung verhindert Datenverlust. Export-Funktion für externe Backups.</div>
               <div>⏰ <strong>Empfehlung:</strong> Erstelle regelmäßig manuelle Backups und exportiere wichtige Daten.</div>
             </div>
-          </div>
-        </main>
+                      </div>
+          </main>
+
+          {/* Footer for admin backup */}
+          <footer className="py-4 text-center text-xs text-slate-500">
+            <button onClick={() => setShowBackupPanel(true)} className="underline hover:text-slate-700">Backup</button>
+          </footer>
 
         <AddDayModal
           isOpen={isAddDayModalOpen}
@@ -485,6 +492,16 @@ export default function App(): React.ReactNode {
           onClose={() => setImportModalState({ isOpen: false, file: null })}
           onImport={importData}
         />
+
+        {showBackupPanel && (
+          <BackupPanel
+            onClose={() => setShowBackupPanel(false)}
+            onCreate={createBackup}
+            onRestore={restoreBackup}
+            onExport={exportData}
+            onImport={() => { setShowBackupPanel(false); setImportModalState({ isOpen: true, file: null }); }}
+          />
+        )}
       </div>
     );
   }
