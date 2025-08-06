@@ -160,6 +160,26 @@ export const useTripData = (tripId: string = 'andalusien-2025') => {
           console.warn('⚠️ Lokales Backup fehlgeschlagen:', error);
         }
         
+        // Größenprüfung vor dem Speichern
+        const tripSize = JSON.stringify(cleanedTrip).length;
+        const maxSize = 800 * 1024; // 800 KB (sicherer als 1 MB)
+        
+        if (tripSize > maxSize) {
+          console.warn(`⚠️ Trip zu groß (${Math.round(tripSize/1024)} KB) - Erstelle Backup und zeige Warnung`);
+          
+          // Erstelle sofort ein Backup
+          try {
+            localStorage.setItem('andalusien-trip-backup-large', JSON.stringify(cleanedTrip));
+            localStorage.setItem('andalusien-trip-backup-large-timestamp', Date.now().toString());
+            console.log('✅ Backup vor Größenproblem erstellt');
+          } catch (error) {
+            console.error('❌ Backup-Erstellung fehlgeschlagen:', error);
+          }
+          
+          setError(`Daten zu groß (${Math.round(tripSize/1024)} KB). Backup erstellt. Bitte Bilder entfernen oder Daten aufteilen.`);
+          return; // Nicht speichern, um Datenverlust zu verhindern
+        }
+        
         // Firebase speichern
         tripService.saveTrip(cleanedTrip).catch((err) => {
           console.error('Fehler beim automatischen Speichern:', err);
@@ -568,21 +588,88 @@ export const useTripData = (tripId: string = 'andalusien-2025') => {
   // Funktion zum Backup wiederherstellen
   const restoreBackup = useCallback(() => {
     try {
-      const backupData = localStorage.getItem('andalusien-trip-backup');
+      // Prüfe zuerst das große Backup (bei Größenproblemen)
+      let backupData = localStorage.getItem('andalusien-trip-backup-large');
       if (backupData) {
         const restoredTrip = JSON.parse(backupData);
         setTrip(restoredTrip);
         setError(null);
-        console.log('✅ Backup wiederhergestellt');
+        console.log('✅ Großes Backup wiederhergestellt');
         return true;
-      } else {
-        console.log('❌ Kein Backup gefunden');
-        return false;
       }
+      
+      // Dann das normale Backup
+      backupData = localStorage.getItem('andalusien-trip-backup');
+      if (backupData) {
+        const restoredTrip = JSON.parse(backupData);
+        setTrip(restoredTrip);
+        setError(null);
+        console.log('✅ Normales Backup wiederhergestellt');
+        return true;
+      }
+      
+      console.log('❌ Kein Backup gefunden');
+      return false;
     } catch (error) {
       console.error('❌ Fehler beim Wiederherstellen des Backups:', error);
       return false;
     }
+  }, []);
+
+  // Funktion zum Export der Daten als JSON
+  const exportData = useCallback(() => {
+    if (!trip) return null;
+    
+    try {
+      const exportData = {
+        trip: trip,
+        exportDate: new Date().toISOString(),
+        version: '1.0'
+      };
+      
+      const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `andalusien-trip-${new Date().toISOString().split('T')[0]}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      
+      console.log('✅ Daten exportiert');
+      return true;
+    } catch (error) {
+      console.error('❌ Fehler beim Export:', error);
+      return false;
+    }
+  }, [trip]);
+
+  // Funktion zum Import von JSON-Daten
+  const importData = useCallback((file: File) => {
+    return new Promise<boolean>((resolve) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const content = e.target?.result as string;
+          const importData = JSON.parse(content);
+          
+          if (importData.trip) {
+            setTrip(importData.trip);
+            setError(null);
+            console.log('✅ Daten importiert');
+            resolve(true);
+          } else {
+            console.error('❌ Ungültiges Import-Format');
+            resolve(false);
+          }
+        } catch (error) {
+          console.error('❌ Fehler beim Import:', error);
+          resolve(false);
+        }
+      };
+      reader.readAsText(file);
+    });
   }, []);
 
   return { 
@@ -601,5 +688,7 @@ export const useTripData = (tripId: string = 'andalusien-2025') => {
     resetDatabase,
     createBackup,
     restoreBackup,
+    exportData,
+    importData,
   };
 };

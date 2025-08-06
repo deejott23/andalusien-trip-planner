@@ -11,6 +11,7 @@ import EditEntryModal from './components/EditEntryModal';
 import EditDaySeparatorModal from './components/EditDaySeparatorModal';
 import ConfirmModal from './components/ConfirmModal';
 import LoadingSpinner from './components/LoadingSpinner';
+import ImportModal from './components/ImportModal';
 
 import { PlusIcon } from './components/Icons';
 
@@ -31,6 +32,8 @@ export default function App(): React.ReactNode {
     resetDatabase,
     createBackup,
     restoreBackup,
+    exportData,
+    importData,
   } = useTripData('andalusien-2025');
 
   const [isAddDayModalOpen, setAddDayModalOpen] = useState(false);
@@ -38,6 +41,7 @@ export default function App(): React.ReactNode {
   const [editEntryModalState, setEditEntryModalState] = useState<{ isOpen: boolean; dayId: string | null; entry: Entry | null }>({ isOpen: false, dayId: null, entry: null });
   const [editDaySeparatorModalState, setEditDaySeparatorModalState] = useState<{ isOpen: boolean; entry: DaySeparatorEntry | null }>({ isOpen: false, entry: null });
   const [confirmModalState, setConfirmModalState] = useState<{ isOpen: boolean; title: string; message: string; onConfirm: () => void }>({ isOpen: false, title: '', message: '', onConfirm: () => {} });
+  const [importModalState, setImportModalState] = useState<{ isOpen: boolean; file: File | null }>({ isOpen: false, file: null });
   
   const [activeDayEntryId, setActiveDayEntryId] = useState<string | null>(null);
   const entryRefs = useRef<Map<string, HTMLElement>>(new Map());
@@ -393,6 +397,20 @@ export default function App(): React.ReactNode {
                 🔄 Backup wiederherstellen
               </button>
               
+              <button
+                onClick={exportData}
+                className="inline-flex items-center gap-2 px-6 py-3 bg-purple-600 text-white rounded-full font-semibold hover:bg-purple-700 transition-colors shadow-sm"
+              >
+                📤 Daten exportieren
+              </button>
+              
+              <button
+                onClick={() => setImportModalState({ isOpen: true, file: null })}
+                className="inline-flex items-center gap-2 px-6 py-3 bg-orange-600 text-white rounded-full font-semibold hover:bg-orange-700 transition-colors shadow-sm"
+              >
+                📥 Daten importieren
+              </button>
+              
               {error && (
                 <button
                   onClick={resetDatabase}
@@ -411,8 +429,10 @@ export default function App(): React.ReactNode {
               </div>
             )}
             
-            <div className="text-xs text-slate-500">
-              💡 <strong>Backup-System:</strong> Automatische Backups werden lokal gespeichert und bei Problemen wiederhergestellt.
+            <div className="text-xs text-slate-500 space-y-1">
+              <div>💡 <strong>Backup-System:</strong> Automatische Backups werden lokal gespeichert und bei Problemen wiederhergestellt.</div>
+              <div>🛡️ <strong>Sicherheit:</strong> Größenprüfung verhindert Datenverlust. Export-Funktion für externe Backups.</div>
+              <div>⏰ <strong>Empfehlung:</strong> Erstelle regelmäßig manuelle Backups und exportiere wichtige Daten.</div>
             </div>
           </div>
         </main>
@@ -458,6 +478,12 @@ export default function App(): React.ReactNode {
           title={confirmModalState.title}
           message={confirmModalState.message}
           onConfirm={confirmModalState.onConfirm}
+        />
+
+        <ImportModal
+          isOpen={importModalState.isOpen}
+          onClose={() => setImportModalState({ isOpen: false, file: null })}
+          onImport={importData}
         />
       </div>
     );
