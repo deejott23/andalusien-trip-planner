@@ -89,7 +89,7 @@ const AddEntryModal: React.FC<AddEntryModalProps> = ({ isOpen, onClose, onAddEnt
     }
   }, [isOpen, station, tripStartDate, allDays]);
 
-  if (!isOpen) return null;
+
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -121,6 +121,8 @@ const AddEntryModal: React.FC<AddEntryModalProps> = ({ isOpen, onClose, onAddEnt
       .catch(() => { if (!cancelled) { setMapsLoading(false); } });
     return () => { cancelled = true; };
   }, [url]);
+
+  if (!isOpen) return null;
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
