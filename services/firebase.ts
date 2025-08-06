@@ -1,5 +1,6 @@
 import { initializeApp } from 'firebase/app';
 import { getFirestore, collection, doc, getDoc, setDoc, updateDoc, deleteDoc, onSnapshot, query, orderBy } from 'firebase/firestore';
+import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import type { Trip } from '../types';
 
 // Firebase-Konfiguration
@@ -25,12 +26,14 @@ const isFirebaseConfigured = () => {
 
 let app: any = null;
 let db: any = null;
+let storage: any = null;
 
 // Firebase initialisieren (nur wenn konfiguriert)
 if (isFirebaseConfigured()) {
   try {
     app = initializeApp(firebaseConfig);
     db = getFirestore(app);
+    storage = getStorage(app);
     console.log('✅ Firebase erfolgreich initialisiert');
   } catch (error) {
     console.error('❌ Firebase-Initialisierung fehlgeschlagen:', error);
@@ -41,6 +44,54 @@ if (isFirebaseConfigured()) {
 
 // Firestore-Sammlungen
 const TRIPS_COLLECTION = 'trips';
+
+// Storage-Service Funktionen
+export const storageService = {
+  // Bild in Firebase Storage hochladen
+  async uploadImage(imageDataUrl: string, fileName: string): Promise<string> {
+    if (!storage) {
+      throw new Error('Firebase Storage nicht verfügbar');
+    }
+
+    try {
+      // Base64 zu Blob konvertieren
+      const response = await fetch(imageDataUrl);
+      const blob = await response.blob();
+      
+      // Eindeutigen Dateinamen generieren
+      const uniqueFileName = `${Date.now()}-${fileName}`;
+      const storageRef = ref(storage, `images/${uniqueFileName}`);
+      
+      // Bild hochladen
+      await uploadBytes(storageRef, blob);
+      
+      // Download-URL abrufen
+      const downloadURL = await getDownloadURL(storageRef);
+      console.log('✅ Bild erfolgreich hochgeladen:', downloadURL);
+      
+      return downloadURL;
+    } catch (error) {
+      console.error('Fehler beim Hochladen des Bildes:', error);
+      throw error;
+    }
+  },
+
+  // Bild aus Firebase Storage löschen
+  async deleteImage(imageUrl: string): Promise<void> {
+    if (!storage) {
+      console.warn('Firebase Storage nicht verfügbar - Bild-Löschung übersprungen');
+      return;
+    }
+
+    try {
+      const imageRef = ref(storage, imageUrl);
+      await deleteObject(imageRef);
+      console.log('✅ Bild erfolgreich gelöscht:', imageUrl);
+    } catch (error) {
+      console.error('Fehler beim Löschen des Bildes:', error);
+    }
+  }
+};
 
 // Trip-Service Funktionen
 export const tripService = {

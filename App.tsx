@@ -28,6 +28,7 @@ export default function App(): React.ReactNode {
     moveDay,
     moveEntry,
     updateEntryReaction,
+    resetDatabase,
   } = useTripData('andalusien-2025');
 
   const [isAddDayModalOpen, setAddDayModalOpen] = useState(false);
@@ -366,14 +367,33 @@ export default function App(): React.ReactNode {
                 ))}
             </div>
 
-          <div className="mt-6 sm:mt-8 pt-6 sm:pt-8 border-t border-slate-200/80 text-center">
-            <button
-              onClick={() => setAddDayModalOpen(true)}
-              className="inline-flex items-center gap-2 px-6 py-3 bg-white border border-slate-300 rounded-full text-slate-700 font-semibold hover:bg-slate-50 transition-colors shadow-sm"
-            >
-              <PlusIcon />
-              Neue Station hinzufügen
-            </button>
+          <div className="mt-6 sm:mt-8 pt-6 sm:pt-8 border-t border-slate-200/80 text-center space-y-4">
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <button
+                onClick={() => setAddDayModalOpen(true)}
+                className="inline-flex items-center gap-2 px-6 py-3 bg-white border border-slate-300 rounded-full text-slate-700 font-semibold hover:bg-slate-50 transition-colors shadow-sm"
+              >
+                <PlusIcon />
+                Neue Station hinzufügen
+              </button>
+              
+              {error && (
+                <button
+                  onClick={resetDatabase}
+                  className="inline-flex items-center gap-2 px-6 py-3 bg-red-600 text-white rounded-full font-semibold hover:bg-red-700 transition-colors shadow-sm"
+                >
+                  🔄 Datenbank zurücksetzen
+                </button>
+              )}
+            </div>
+            
+            {error && (
+              <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg p-3">
+                <strong>Fehler:</strong> {error}
+                <br />
+                <span className="text-xs">Die Datenbank wurde zu groß. Klicke "Datenbank zurücksetzen" um die Einträge wiederherzustellen.</span>
+              </div>
+            )}
           </div>
         </main>
 

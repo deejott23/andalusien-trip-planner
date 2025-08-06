@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import type { Trip, Day, Entry, InfoEntry, NoteEntry, Attachment, DaySeparatorEntry, SeparatorEntry } from '../types';
 import { EntryTypeEnum, CategoryEnum } from '../types';
+import { tripService, storageService } from '../services/firebase';
 // Funktion zum Abrufen von URL-Metadaten über Netlify Function
 const fetchUrlMetadata = async (url: string) => {
   try {
@@ -14,7 +15,6 @@ const fetchUrlMetadata = async (url: string) => {
     return { title: url, description: '', imageUrl: null };
   }
 };
-import { tripService } from '../services/firebase';
 
 const initialStations: Day[] = [
   {
@@ -266,6 +266,18 @@ export const useTripData = (tripId: string = 'andalusien-2025') => {
         };
       });
     } else if (type === EntryTypeEnum.NOTE && data.content) {
+      // Bild über Firebase Storage hochladen, falls vorhanden
+      let imageUrl = data.imageDataUrl;
+      if (data.imageDataUrl) {
+        try {
+          imageUrl = await storageService.uploadImage(data.imageDataUrl, `image-${tempId}.jpg`);
+        } catch (error) {
+          console.error('Fehler beim Hochladen des Bildes:', error);
+          // Fallback: Verwende Base64-URL (wird später durch Storage-URL ersetzt)
+          imageUrl = data.imageDataUrl;
+        }
+      }
+
       newEntry = {
         id: tempId,
         type: EntryTypeEnum.NOTE,
@@ -274,7 +286,7 @@ export const useTripData = (tripId: string = 'andalusien-2025') => {
         url: data.url,
         category: data.category || CategoryEnum.INFORMATION,
         attachment: data.attachment,
-        imageUrl: data.imageDataUrl,
+        imageUrl: imageUrl,
         reactions: { likes: 0, dislikes: 0, userReaction: null },
       } as NoteEntry;
       
@@ -361,6 +373,18 @@ export const useTripData = (tripId: string = 'andalusien-2025') => {
     
     setTrip((prevTrip) => {
       if (!prevTrip) return prevTrip;
+      
+      // Finde den Eintrag, um zu prüfen, ob er ein Bild hat
+      let entryToDelete: Entry | undefined;
+      for (const day of prevTrip.days) {
+        entryToDelete = day.entries.find(entry => entry.id === entryId);
+        if (entryToDelete) break;
+      }
+      
+      // Lösche das Bild aus Firebase Storage, falls vorhanden
+      if (entryToDelete && 'imageUrl' in entryToDelete && entryToDelete.imageUrl) {
+        storageService.deleteImage(entryToDelete.imageUrl).catch(console.error);
+      }
       
       // Spezielle Behandlung für "Vor dem Urlaub" Station
       if (dayId === 'before-trip') {
@@ -466,6 +490,27 @@ export const useTripData = (tripId: string = 'andalusien-2025') => {
     });
   }, [trip]);
 
+  // Funktion zum Bereinigen der Datenbank und Wiederherstellen der Einträge
+  const resetDatabase = useCallback(async () => {
+    try {
+      console.log('🔄 Starte Datenbank-Reset...');
+      
+      // Lösche das aktuelle Trip-Dokument
+      await tripService.deleteTrip(tripId);
+      console.log('✅ Altes Trip-Dokument gelöscht');
+      
+      // Lade Demo-Daten neu
+      setTrip(initialTripData);
+      setLoading(false);
+      setError(null);
+      
+      console.log('✅ Datenbank-Reset abgeschlossen');
+    } catch (error) {
+      console.error('❌ Fehler beim Datenbank-Reset:', error);
+      setError('Fehler beim Zurücksetzen der Datenbank');
+    }
+  }, [tripId]);
+
   return { 
     trip, 
     loading, 
@@ -478,6 +523,7 @@ export const useTripData = (tripId: string = 'andalusien-2025') => {
     deleteEntry, 
     moveDay, 
     moveEntry, 
-    updateEntryReaction 
+    updateEntryReaction,
+    resetDatabase,
   };
 };
