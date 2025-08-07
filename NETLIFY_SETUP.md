@@ -29,6 +29,16 @@ GEMINI_API_KEY=your-gemini-api-key-here
 3. Warte bis der Build abgeschlossen ist
 4. Teste deine App
 
+## Backups und Schutz vor Datenverlust
+
+- Stündliches Server-Backup (bereits im Repo): `netlify/functions/backup-trip.ts` legt stündlich ein Backup des Trips in Firebase Storage ab (Pfad `backups/trips/andalusien-2025`). Voraussetzung: `FIREBASE_SERVICE_ACCOUNT_BASE64` (Service-Account JSON base64-codiert) ist gesetzt.
+- Manueller Pre-Deploy-Backup Hook:
+  - In Netlify unter **Site settings → Build & deploy → Build hooks** einen Hook erstellen (z. B. `predeploy-backup`).
+  - In GitHub unter **Settings → Webhooks** diesen Hook als Webhook eintragen und vor einem Release/Deploy auslösen.
+  - Alternativ einfach vor dem Merge/Push den Endpoint manuell aufrufen: `https://<site>/.netlify/functions/backup-trip` (nur wenn Service-Account-ENV gesetzt ist).
+- Automatische Demo-Daten Speicherung deaktiviert:
+  - Die Logik, die bei leeren Firestore-Daten Demo-Daten automatisch in Firebase speichert, wurde deaktiviert. Demo-Daten werden nur lokal verwendet, speichern aber nicht mehr automatisch in Firebase.
+
 ## Troubleshooting
 
 Falls die App immer noch nicht lädt:

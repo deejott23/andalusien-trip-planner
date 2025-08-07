@@ -107,13 +107,8 @@ export const useTripData = (tripId: string = 'andalusien-2025') => {
           console.warn('⚠️ Fehler beim Laden des lokalen Backups:', error);
         }
         
-        console.log('📋 Verwende Demo-Daten');
+        console.log('📋 Verwende Demo-Daten (nur lokal, keine automatische Speicherung in Firebase)');
         loadDemoData();
-        // Speichere Demo-Daten in Firebase (nur wenn Firebase verfügbar)
-        if (tripService.isConnected()) {
-          const cleanedInitialData = cleanTripData(initialTripData);
-          tripService.saveTrip(cleanedInitialData).catch(console.error);
-        }
       }
       setLoading(false);
     });

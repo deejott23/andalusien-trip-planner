@@ -49,6 +49,7 @@ export interface NoteEntry {
   content: string;
   url?: string;
   category: CategoryEnum;
+  imageUrl?: string;
   attachment?: Attachment;
   reactions?: Reactions;
 }
