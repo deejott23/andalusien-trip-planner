@@ -1,4 +1,7 @@
-import { Handler } from '@netlify/functions';
+type NetlifyEvent = {
+  headers?: Record<string, string>;
+  queryStringParameters?: { token?: string };
+};
 import { initializeApp, cert } from 'firebase-admin/app';
 import { getFirestore } from 'firebase-admin/firestore';
 import { getStorage } from 'firebase-admin/storage';
@@ -26,8 +29,17 @@ const TRIP_ID = 'andalusien-2025';
 const BACKUP_PATH = `backups/trips/${TRIP_ID}`;
 const MAX_VERSIONS = 48; // 48 stündliche Backups = 2 Tage
 
-export const handler: Handler = async () => {
+export const handler = async (event: NetlifyEvent) => {
   try {
+    // Optionaler Token-Schutz
+    const expectedToken = process.env.BACKUP_TOKEN;
+    if (expectedToken) {
+      const headerToken = event.headers?.['x-backup-token'] || event.headers?.['X-Backup-Token'];
+      const queryToken = event.queryStringParameters?.token;
+      if (headerToken !== expectedToken && queryToken !== expectedToken) {
+        return { statusCode: 401, body: 'Unauthorized' };
+      }
+    }
     // Trip laden
     const tripSnap = await db.collection('trips').doc(TRIP_ID).get();
     if (!tripSnap.exists) {
