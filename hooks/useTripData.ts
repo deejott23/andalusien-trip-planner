@@ -324,15 +324,27 @@ export const useTripData = (tripId: string = 'andalusien-2025') => {
         };
       });
     } else if (type === EntryTypeEnum.NOTE && data.content) {
-      // Bild über Firebase Storage hochladen, falls vorhanden
+      // Bild-Handling:
+      // - Wenn imageDataUrl eine externe URL ist (http/https), nicht im Browser hochladen (CORS), sondern direkt übernehmen
+      // - Wenn es eine Data-URL ist (base64), in Firebase Storage hochladen
       let imageUrl = data.imageDataUrl;
       if (data.imageDataUrl) {
-        try {
-          imageUrl = await storageService.uploadImage(data.imageDataUrl, `image-${tempId}.jpg`);
-        } catch (error) {
-          console.error('Fehler beim Hochladen des Bildes:', error);
-          // Fallback: Verwende Base64-URL (wird später durch Storage-URL ersetzt)
-          imageUrl = data.imageDataUrl;
+        const isExternal = /^https?:\/\//i.test(data.imageDataUrl);
+        const isDataUrl = /^data:/i.test(data.imageDataUrl);
+        if (isDataUrl) {
+          try {
+            imageUrl = await storageService.uploadImage(data.imageDataUrl, `image-${tempId}.jpg`);
+          } catch (error) {
+            console.error('Fehler beim Hochladen des Bildes:', error);
+            imageUrl = data.imageDataUrl;
+          }
+        } else if (!isExternal) {
+          // Unbekanntes Format – versuche Upload
+          try {
+            imageUrl = await storageService.uploadImage(data.imageDataUrl, `image-${tempId}.jpg`);
+          } catch (error) {
+            console.error('Fehler beim Hochladen des Bildes (unbekanntes Format):', error);
+          }
         }
       }
 

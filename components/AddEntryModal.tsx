@@ -219,6 +219,18 @@ const AddEntryModal: React.FC<AddEntryModalProps> = ({ isOpen, onClose, onAddEnt
             {activeTab === EntryTypeEnum.NOTE && (
                 <>
                   <div>
+                    <label htmlFor="url" className="block text-sm font-medium text-slate-700 mb-1">URL (Optional)</label>
+                    <input 
+                      id="url" 
+                      type="url" 
+                      value={url} 
+                      onChange={(e) => setUrl(e.target.value)} 
+                      placeholder="z.B. https://example.com oder Google-Maps-Link" 
+                      className="w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500" 
+                    />
+                  </div>
+
+                  <div>
                     <label htmlFor="title" className="block text-sm font-medium text-slate-700 mb-1">Titel (Optional)</label>
                     <input 
                       id="title" 
@@ -251,20 +263,8 @@ const AddEntryModal: React.FC<AddEntryModalProps> = ({ isOpen, onClose, onAddEnt
                     </div>
                   </div>
 
-                  <div>
-                    <label htmlFor="url" className="block text-sm font-medium text-slate-700 mb-1">URL (Optional)</label>
-                    <input 
-                      id="url" 
-                      type="url" 
-                      value={url} 
-                      onChange={(e) => setUrl(e.target.value)} 
-                      placeholder="https://example.com" 
-                      className="w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500" 
-                    />
-                  </div>
-
                   {(mapsLoading || urlLoading) && (
-                    <div className="flex items-center gap-2 text-sm text-slate-500"><span className="animate-spin inline-block w-4 h-4 border-2 border-current border-t-transparent rounded-full"></span> Lade Google-Maps-Daten...</div>
+                    <div className="flex items-center gap-2 text-sm text-slate-500"><span className="animate-spin inline-block w-4 h-4 border-2 border-current border-t-transparent rounded-full"></span> Lade URL-Metadaten...</div>
                   )}
 
                   {mapsMetadata && (
