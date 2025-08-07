@@ -16,6 +16,8 @@ interface AddEntryModalProps {
 const AddEntryModal: React.FC<AddEntryModalProps> = ({ isOpen, onClose, onAddEntry, station, tripStartDate, allDays }) => {
   const [mapsMetadata, setMapsMetadata] = useState<{ title: string; description: string; imageUrl?: string } | null>(null);
   const [mapsLoading, setMapsLoading] = useState(false);
+  const [urlMetadata, setUrlMetadata] = useState<{ title?: string; description?: string; imageUrl?: string } | null>(null);
+  const [urlLoading, setUrlLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<EntryTypeEnum>(EntryTypeEnum.NOTE);
   const [title, setTitle] = useState('');
   const [url, setUrl] = useState('');
@@ -119,6 +121,30 @@ const AddEntryModal: React.FC<AddEntryModalProps> = ({ isOpen, onClose, onAddEnt
         }
       })
       .catch(() => { if (!cancelled) { setMapsLoading(false); } });
+    return () => { cancelled = true; };
+  }, [url]);
+
+  // Generische URL-Metadaten (nicht-Google-Maps)
+  useEffect(() => {
+    if (!url) { setUrlMetadata(null); return; }
+    const mapsRegex = /(?:google\.[a-z.]+\/maps|maps\.app\.goo\.gl)/i;
+    if (mapsRegex.test(url)) { setUrlMetadata(null); return; }
+
+    let cancelled = false;
+    setUrlLoading(true);
+    fetch(`/.netlify/functions/fetch-metadata?url=${encodeURIComponent(url)}`)
+      .then(res => res.ok ? res.json() : null)
+      .then(data => {
+        if (cancelled) return;
+        setUrlLoading(false);
+        if (data && (data.title || data.imageUrl)) {
+          setUrlMetadata(data);
+          if (!title && data.title) setTitle(data.title);
+        } else {
+          setUrlMetadata(null);
+        }
+      })
+      .catch(() => { if (!cancelled) { setUrlLoading(false); setUrlMetadata(null); } });
     return () => { cancelled = true; };
   }, [url]);
 
@@ -237,7 +263,7 @@ const AddEntryModal: React.FC<AddEntryModalProps> = ({ isOpen, onClose, onAddEnt
                     />
                   </div>
 
-                  {mapsLoading && (
+                  {(mapsLoading || urlLoading) && (
                     <div className="flex items-center gap-2 text-sm text-slate-500"><span className="animate-spin inline-block w-4 h-4 border-2 border-current border-t-transparent rounded-full"></span> Lade Google-Maps-Daten...</div>
                   )}
 
@@ -249,6 +275,19 @@ const AddEntryModal: React.FC<AddEntryModalProps> = ({ isOpen, onClose, onAddEnt
                       <button type="button" onClick={() => {
                         if (!content) setContent(mapsMetadata.description);
                         if (!imageDataUrl && mapsMetadata.imageUrl) setImageDataUrl(mapsMetadata.imageUrl);
+                      }} className="mt-2 px-3 py-1.5 bg-blue-600 text-white rounded-md text-sm hover:bg-blue-700">Daten übernehmen</button>
+                    </div>
+                  )}
+
+                  {!mapsMetadata && urlMetadata && (
+                    <div className="p-3 mt-2 border border-slate-200 rounded-lg bg-slate-50 space-y-2">
+                      {urlMetadata.imageUrl && <img src={urlMetadata.imageUrl} alt={urlMetadata.title || 'Vorschaubild'} className="w-full h-auto rounded" />}
+                      {urlMetadata.title && <div className="font-semibold text-slate-800">{urlMetadata.title}</div>}
+                      {urlMetadata.description && <div className="text-xs text-slate-600">{urlMetadata.description}</div>}
+                      <button type="button" onClick={() => {
+                        if (!content && urlMetadata.description) setContent(urlMetadata.description);
+                        if (!imageDataUrl && urlMetadata.imageUrl) setImageDataUrl(urlMetadata.imageUrl);
+                        if (!title && urlMetadata.title) setTitle(urlMetadata.title);
                       }} className="mt-2 px-3 py-1.5 bg-blue-600 text-white rounded-md text-sm hover:bg-blue-700">Daten übernehmen</button>
                     </div>
                   )}
