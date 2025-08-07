@@ -292,6 +292,16 @@ const NoteCard: React.FC<{
               </h3>
             )}
             <div className="prose prose-sm max-w-none text-slate-700" dangerouslySetInnerHTML={{ __html: cleanContent }} />
+
+            {entry.imageUrl && (
+              <div className="mt-3">
+                <img
+                  src={entry.imageUrl}
+                  alt="Notiz-Bild"
+                  className="rounded-lg max-h-48 w-auto object-cover border border-amber-200"
+                />
+              </div>
+            )}
             
             {/* URL-Anzeige wenn vorhanden */}
             {entry.url && (
