@@ -51,20 +51,17 @@ const Timeline: React.FC<TimelineProps> = ({ stations, activeDayEntryId, onDayCl
     let currentDate = new Date(tripStartDate);
 
     for (const station of stations) {
-      // Vor dem Urlaub: generiere virtuelle Tage vor dem Reisebeginn
+      // Vor dem Urlaub: nur EIN Symbol "V" anzeigen
       if (station.title === 'Vor dem Urlaub') {
-        const numDays = Math.max(0, station.duration || 0);
-        for (let i = 0; i < numDays; i++) {
-          const date = addDays(currentDate, -(numDays - i));
-          entries.push({
-            id: `virtual-${station.id}-${i}` as any,
-            type: EntryTypeEnum.DAY_SEPARATOR,
-            title: station.title,
-            date: date.toISOString().split('T')[0],
-            stationColor: station.color,
-            stationTitle: station.title
-          } as any);
-        }
+        const date = addDays(new Date(tripStartDate), -1);
+        entries.push({
+          id: `virtual-before-trip` as any,
+          type: EntryTypeEnum.DAY_SEPARATOR,
+          title: station.title,
+          date: date.toISOString().split('T')[0],
+          stationColor: station.color,
+          stationTitle: station.title
+        } as any);
         continue;
       }
 

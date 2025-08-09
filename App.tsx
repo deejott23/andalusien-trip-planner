@@ -246,35 +246,41 @@ export default function App(): React.ReactNode {
   }, [deleteEntry, editEntryModalState.dayId, displayTrip]);
 
   const handleScrollToDay = useCallback((dayEntryId: string) => {
-    // Virtuelle IDs (z. B. "virtual-station-...") auf das erste passende echte Element auflösen
-    let targetId: string | null = null;
-
-    if (dayEntryId.startsWith('virtual-')) {
-      // Versuche, nach Datum die nächste echte DaySeparator-Card zu finden
-      const el = document.querySelector(`[id^="${dayEntryId}"]`) as HTMLElement | null;
-      if (el) targetId = el.id;
-      if (!targetId && daySeparatorEntries.length > 0) targetId = daySeparatorEntries[0].id; // Fallback
-    } else {
-      targetId = dayEntryId;
-    }
-
-    if (!targetId) return;
-
-    setActiveDayEntryId(targetId);
-
-    const ref = entryRefs.current.get(targetId);
-    if (ref) {
-      const y = ref.getBoundingClientRect().top + window.scrollY - 80;
+    // 1) Wenn ein echter Tages-Eintrag existiert, dahin scrollen
+    const entryEl = document.getElementById(dayEntryId);
+    if (entryEl) {
+      const y = entryEl.getBoundingClientRect().top + window.scrollY - 80;
       window.scrollTo({ top: y, behavior: 'smooth' });
+      setActiveDayEntryId(dayEntryId);
       return;
     }
 
-    const el = document.getElementById(targetId);
-    if (el) {
-      const y = el.getBoundingClientRect().top + window.scrollY - 80;
-      window.scrollTo({ top: y, behavior: 'smooth' });
+    // 2) Sonst handelt es sich um eine virtuelle ID → zur Station scrollen
+    const virtualPrefix = 'virtual-';
+    if (dayEntryId.startsWith(virtualPrefix)) {
+      if (dayEntryId === 'virtual-before-trip') {
+        const stationEl = document.getElementById('station-before-trip');
+        if (stationEl) {
+          const y = stationEl.getBoundingClientRect().top + window.scrollY - 80;
+          window.scrollTo({ top: y, behavior: 'smooth' });
+        }
+        return;
+      }
+      const parts = dayEntryId.split('-');
+      if (parts.length >= 3) {
+        const stationId = parts.slice(1, parts.length - 1).join('-');
+        const stationEl = document.getElementById(`station-${stationId}`);
+        if (stationEl) {
+          const y = stationEl.getBoundingClientRect().top + window.scrollY - 80;
+          window.scrollTo({ top: y, behavior: 'smooth' });
+        }
+        return;
+      }
     }
-  }, [daySeparatorEntries]);
+
+    // 3) Fallback
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, []);
 
   useEffect(() => {
     if (!trip?.days) return;
