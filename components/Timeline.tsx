@@ -41,45 +41,66 @@ const Timeline: React.FC<TimelineProps> = ({ stations, activeDayEntryId, onDayCl
 
   // Erstelle Timeline-Einträge für alle Stationen
   const timelineEntries = useMemo(() => {
-    const entries = [];
-    
+    const addDays = (d: Date, days: number) => {
+      const nd = new Date(d);
+      nd.setDate(nd.getDate() + days);
+      return nd;
+    };
+
+    const entries: Array<DaySeparatorEntry & { stationColor: string; stationTitle: string }> = [] as any;
+    let currentDate = new Date(tripStartDate);
+
     for (const station of stations) {
-      // Spezielle Behandlung für "Vor dem Urlaub" - kein Tageseintrag
+      // Vor dem Urlaub: generiere virtuelle Tage vor dem Reisebeginn
       if (station.title === 'Vor dem Urlaub') {
-        entries.push({
-          id: `virtual-${station.id}`,
-          type: EntryTypeEnum.DAY_SEPARATOR,
-          title: station.title,
-          date: new Date().toISOString().split('T')[0], // Heute als Fallback
-          stationColor: station.color,
-          stationTitle: station.title
-        });
+        const numDays = Math.max(0, station.duration || 0);
+        for (let i = 0; i < numDays; i++) {
+          const date = addDays(currentDate, -(numDays - i));
+          entries.push({
+            id: `virtual-${station.id}-${i}` as any,
+            type: EntryTypeEnum.DAY_SEPARATOR,
+            title: station.title,
+            date: date.toISOString().split('T')[0],
+            stationColor: station.color,
+            stationTitle: station.title
+          } as any);
+        }
         continue;
       }
-      
+
       // Suche nach DAY_SEPARATOR Einträgen
       const separatorEntries = station.entries
         .filter((e): e is DaySeparatorEntry => e.type === EntryTypeEnum.DAY_SEPARATOR)
         .map(e => ({ ...e, stationColor: station.color, stationTitle: station.title }));
-      
+
       if (separatorEntries.length > 0) {
-        // Füge alle Tageseinträge hinzu
-        entries.push(...separatorEntries);
+        // Sortiert hinzufügen und currentDate fortschreiben
+        separatorEntries
+          .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+          .forEach(e => entries.push(e));
+
+        const lastDate = new Date(separatorEntries[separatorEntries.length - 1].date);
+        currentDate = addDays(lastDate, 1);
       } else {
-        // Wenn keine DAY_SEPARATOR Einträge vorhanden, erstelle einen virtuellen Eintrag
-        entries.push({
-          id: `virtual-${station.id}`,
-          type: EntryTypeEnum.DAY_SEPARATOR,
-          title: station.title,
-          date: new Date().toISOString().split('T')[0], // Heute als Fallback
-          stationColor: station.color,
-          stationTitle: station.title
-        });
+        // Wenn keine DAY_SEPARATOR Einträge vorhanden, generiere pro Dauer virtuelle Einträge
+        const numDays = Math.max(1, station.duration || 1);
+        for (let i = 0; i < numDays; i++) {
+          const date = addDays(currentDate, i);
+          entries.push({
+            id: `virtual-${station.id}-${i}` as any,
+            type: EntryTypeEnum.DAY_SEPARATOR,
+            title: station.title,
+            date: date.toISOString().split('T')[0],
+            stationColor: station.color,
+            stationTitle: station.title
+          } as any);
+        }
+        currentDate = addDays(currentDate, numDays);
       }
     }
-    
+
     return entries.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-  }, [stations]);
+  }, [stations, tripStartDate]);
   
   const activeDayIndex = useMemo(() => {
     return timelineEntries.findIndex(d => d.id === activeDayEntryId);

@@ -246,14 +246,16 @@ export default function App(): React.ReactNode {
   }, [deleteEntry, editEntryModalState.dayId, displayTrip]);
 
   const handleScrollToDay = useCallback((dayEntryId: string) => {
-    // Bei Klick auf Stations-Label kann eine ID eines DaySeparator-Eintrags
-    // oder eine virtuelle ID (z. B. virtual-before-trip) kommen.
-    let targetId: string | null = dayEntryId;
+    // Virtuelle IDs (z. B. "virtual-station-...") auf das erste passende echte Element auflösen
+    let targetId: string | null = null;
 
-    // Wenn virtuelle ID: wähle den ersten echten DaySeparator der ersten Station nach "Vor dem Urlaub"
     if (dayEntryId.startsWith('virtual-')) {
-      const firstRealSeparator = daySeparatorEntries[0]?.id || null;
-      targetId = firstRealSeparator;
+      // Versuche, nach Datum die nächste echte DaySeparator-Card zu finden
+      const el = document.querySelector(`[id^="${dayEntryId}"]`) as HTMLElement | null;
+      if (el) targetId = el.id;
+      if (!targetId && daySeparatorEntries.length > 0) targetId = daySeparatorEntries[0].id; // Fallback
+    } else {
+      targetId = dayEntryId;
     }
 
     if (!targetId) return;
@@ -262,13 +264,15 @@ export default function App(): React.ReactNode {
 
     const ref = entryRefs.current.get(targetId);
     if (ref) {
-      // Mit Offset für sticky Header scrollen
       const y = ref.getBoundingClientRect().top + window.scrollY - 80;
       window.scrollTo({ top: y, behavior: 'smooth' });
-    } else {
-      // Fallback: direktes scrollIntoView
-      const el = document.getElementById(targetId);
-      el?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      return;
+    }
+
+    const el = document.getElementById(targetId);
+    if (el) {
+      const y = el.getBoundingClientRect().top + window.scrollY - 80;
+      window.scrollTo({ top: y, behavior: 'smooth' });
     }
   }, [daySeparatorEntries]);
 
