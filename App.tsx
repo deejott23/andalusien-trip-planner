@@ -246,13 +246,31 @@ export default function App(): React.ReactNode {
   }, [deleteEntry, editEntryModalState.dayId, displayTrip]);
 
   const handleScrollToDay = useCallback((dayEntryId: string) => {
-    setActiveDayEntryId(dayEntryId);
-    
-    const ref = entryRefs.current.get(dayEntryId);
-    if (ref) {
-      ref.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    // Bei Klick auf Stations-Label kann eine ID eines DaySeparator-Eintrags
+    // oder eine virtuelle ID (z. B. virtual-before-trip) kommen.
+    let targetId: string | null = dayEntryId;
+
+    // Wenn virtuelle ID: wähle den ersten echten DaySeparator der ersten Station nach "Vor dem Urlaub"
+    if (dayEntryId.startsWith('virtual-')) {
+      const firstRealSeparator = daySeparatorEntries[0]?.id || null;
+      targetId = firstRealSeparator;
     }
-  }, []);
+
+    if (!targetId) return;
+
+    setActiveDayEntryId(targetId);
+
+    const ref = entryRefs.current.get(targetId);
+    if (ref) {
+      // Mit Offset für sticky Header scrollen
+      const y = ref.getBoundingClientRect().top + window.scrollY - 80;
+      window.scrollTo({ top: y, behavior: 'smooth' });
+    } else {
+      // Fallback: direktes scrollIntoView
+      const el = document.getElementById(targetId);
+      el?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }, [daySeparatorEntries]);
 
   useEffect(() => {
     if (!trip?.days) return;

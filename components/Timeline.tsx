@@ -149,7 +149,7 @@ const Timeline: React.FC<TimelineProps> = ({ stations, activeDayEntryId, onDayCl
     );
   };
 
-  const StationLabel = ({ days }: { days: typeof firstRowDays }) => {
+  const StationLabel = ({ days, onLabelClick }: { days: typeof firstRowDays, onLabelClick: (dayEntryId: string) => void }) => {
     const stationGroups = days.reduce((acc, day) => {
         const title = day.stationTitle;
         if (!acc[title]) {
@@ -164,9 +164,24 @@ const Timeline: React.FC<TimelineProps> = ({ stations, activeDayEntryId, onDayCl
         {Object.entries(stationGroups).map(([title, {count, color}]) => {
             const widthPercentage = (count / days.length) * 100;
             const colors = colorMapping[color] || colorMapping.gray;
+            const firstEntryForStation = days.find(d => d.stationTitle === title);
+            const targetId = firstEntryForStation?.id;
             return (
-                <div key={title} style={{ width: `${widthPercentage}%` }} className={`text-center font-semibold text-xs ${colors.text} flex-shrink-0 px-1 truncate`}>
-                    {title}
+                <div
+                  key={title}
+                  style={{ width: `${widthPercentage}%` }}
+                  className={`text-center font-semibold text-xs ${colors.text} flex-shrink-0 px-1 truncate cursor-pointer select-none`}
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => targetId && onLabelClick(targetId)}
+                  onKeyDown={(e) => {
+                    if ((e.key === 'Enter' || e.key === ' ') && targetId) {
+                      e.preventDefault();
+                      onLabelClick(targetId);
+                    }
+                  }}
+                >
+                  {title}
                 </div>
             );
         })}
@@ -181,7 +196,7 @@ const Timeline: React.FC<TimelineProps> = ({ stations, activeDayEntryId, onDayCl
     <div className="w-full max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-2">
       <div className="relative pt-8">
         {activeDay && (
-          <div className="absolute top-0 left-1/2 transform -translate-x-1/2 transition-all duration-300 ease-in-out z-30">
+          <div className="absolute top-0 left-1/2 transform -translate-x-1/2 transition-all duration-300 ease-in-out z-30 pointer-events-none">
             <div className="relative px-3 py-1 bg-slate-800 text-white text-xs font-semibold rounded-md shadow-lg whitespace-nowrap">
               {activeDay.title}
             </div>
@@ -202,7 +217,7 @@ const Timeline: React.FC<TimelineProps> = ({ stations, activeDayEntryId, onDayCl
                 {firstRowDays.map(d => <DayNode key={d.id} dayEntry={d} />)}
               </div>
             </div>
-            <StationLabel days={firstRowDays} />
+            <StationLabel days={firstRowDays} onLabelClick={onDayClick} />
             
             {/* --- U-Turn & Second Row --- */}
             {needsTwoRows && (
@@ -217,7 +232,7 @@ const Timeline: React.FC<TimelineProps> = ({ stations, activeDayEntryId, onDayCl
                     {secondRowDays.map(d => <DayNode key={d.id} dayEntry={d} />)}
                   </div>
                 </div>
-                <StationLabel days={secondRowDays.slice().reverse()} />
+                <StationLabel days={secondRowDays.slice().reverse()} onLabelClick={onDayClick} />
               </>
             )}
           </div>
