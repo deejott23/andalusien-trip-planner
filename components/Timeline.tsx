@@ -39,65 +39,16 @@ const Timeline: React.FC<TimelineProps> = ({ stations, activeDayEntryId, onDayCl
 
   // --- DATA PREPARATION ---
 
-  // Erstelle Timeline-Einträge für alle Stationen
+  // Feste Timeline-Einträge unabhängig von unteren Tagesänderungen
   const timelineEntries = useMemo(() => {
-    const addDays = (d: Date, days: number) => {
-      const nd = new Date(d);
-      nd.setDate(nd.getDate() + days);
-      return nd;
-    };
-
-    const entries: Array<DaySeparatorEntry & { stationColor: string; stationTitle: string }> = [] as any;
-    let currentDate = new Date(tripStartDate);
-
-    for (const station of stations) {
-      // Vor dem Urlaub: nur EIN Symbol "V" anzeigen
-      if (station.title === 'Vor dem Urlaub') {
-        const date = addDays(new Date(tripStartDate), -1);
-        entries.push({
-          id: `virtual-before-trip` as any,
-          type: EntryTypeEnum.DAY_SEPARATOR,
-          title: station.title,
-          date: date.toISOString().split('T')[0],
-          stationColor: station.color,
-          stationTitle: station.title
-        } as any);
-        continue;
-      }
-
-      // Suche nach DAY_SEPARATOR Einträgen
-      const separatorEntries = station.entries
-        .filter((e): e is DaySeparatorEntry => e.type === EntryTypeEnum.DAY_SEPARATOR)
-        .map(e => ({ ...e, stationColor: station.color, stationTitle: station.title }));
-
-      if (separatorEntries.length > 0) {
-        // Sortiert hinzufügen und currentDate fortschreiben
-        separatorEntries
-          .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
-          .forEach(e => entries.push(e));
-
-        const lastDate = new Date(separatorEntries[separatorEntries.length - 1].date);
-        currentDate = addDays(lastDate, 1);
-      } else {
-        // Wenn keine DAY_SEPARATOR Einträge vorhanden, generiere pro Dauer virtuelle Einträge
-        const numDays = Math.max(1, station.duration || 1);
-        for (let i = 0; i < numDays; i++) {
-          const date = addDays(currentDate, i);
-          entries.push({
-            id: `virtual-${station.id}-${i}` as any,
-            type: EntryTypeEnum.DAY_SEPARATOR,
-            title: station.title,
-            date: date.toISOString().split('T')[0],
-            stationColor: station.color,
-            stationTitle: station.title
-          } as any);
-        }
-        currentDate = addDays(currentDate, numDays);
-      }
-    }
-
-    return entries.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-  }, [stations, tripStartDate]);
+    const fixed = [
+      { id: 'fixed-before', type: EntryTypeEnum.DAY_SEPARATOR as const, title: 'Vor dem Urlaub', date: '', stationColor: 'gray', stationTitle: 'Vor dem Urlaub' },
+      { id: 'fixed-cadiz', type: EntryTypeEnum.DAY_SEPARATOR as const, title: 'Cádiz', date: '2025-08-27', stationColor: 'orange', stationTitle: 'Cádiz' },
+      { id: 'fixed-marbella', type: EntryTypeEnum.DAY_SEPARATOR as const, title: 'Marbella', date: '2025-08-31', stationColor: 'blue', stationTitle: 'Marbella' },
+      { id: 'fixed-torrox', type: EntryTypeEnum.DAY_SEPARATOR as const, title: 'Torrox', date: '2025-09-04', stationColor: 'green', stationTitle: 'Torrox' },
+    ];
+    return fixed as any;
+  }, []);
   
   const activeDayIndex = useMemo(() => {
     return timelineEntries.findIndex(d => d.id === activeDayEntryId);
@@ -112,17 +63,11 @@ const Timeline: React.FC<TimelineProps> = ({ stations, activeDayEntryId, onDayCl
     if (totalDays === 0) return null;
 
     const isMobile = width < 768;
-    const containerWidth = containerRef.current?.offsetWidth || 0;
-    const dayNodeWidth = isMobile ? 45 : 55;
-    
-    const needsTwoRows = isMobile && totalDays * dayNodeWidth > containerWidth;
-    
-    const daysPerRow = needsTwoRows ? Math.ceil(totalDays / 2) : totalDays;
-    const firstRowDays = timelineEntries.slice(0, daysPerRow);
-    const secondRowDays = needsTwoRows ? timelineEntries.slice(daysPerRow).reverse() : [];
+    const firstRowDays = timelineEntries;
+    const secondRowDays: typeof timelineEntries = [] as any;
 
-    return { needsTwoRows, firstRowDays, secondRowDays, daysPerRow, totalDays, isMobile };
-  }, [timelineEntries, width, containerRef.current]);
+    return { needsTwoRows: false, firstRowDays, secondRowDays, daysPerRow: totalDays, totalDays, isMobile };
+  }, [timelineEntries, width]);
 
   if (!layout) return null;
   const { needsTwoRows, firstRowDays, secondRowDays, daysPerRow, totalDays, isMobile } = layout;
@@ -148,13 +93,15 @@ const Timeline: React.FC<TimelineProps> = ({ stations, activeDayEntryId, onDayCl
       );
     }
     
-    // Zeige den tatsächlichen Tag des Eintrags
-    const getDayNumber = () => {
-      // Verwende das tatsächliche Datum des Eintrags
-      const entryDate = new Date(dayEntry.date);
-      return entryDate.getDate();
+    // Feste Labels: V, 27-31, 31-4, 4-11
+    const labelMap: Record<string, string> = {
+      'Vor dem Urlaub': 'V',
+      'Cádiz': '27-31',
+      'Marbella': '31-4',
+      'Torrox': '4-11',
     };
-    
+    const label = labelMap[dayEntry.stationTitle] || '·';
+
     return (
       <button
         key={dayEntry.id}
@@ -162,7 +109,7 @@ const Timeline: React.FC<TimelineProps> = ({ stations, activeDayEntryId, onDayCl
         className={`relative rounded-full flex items-center justify-center text-white text-xs font-bold ${colors.bg} border-2 ${colors.border} shadow-md transition-all duration-300 ease-in-out hover:scale-110 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-amber-50 ${isActive ? 'w-6 h-6 sm:w-7 sm:h-7 scale-110' : 'w-5 h-5'} flex-shrink-0`}
         aria-label={dayEntry.title}
       >
-        {getDayNumber()}
+        {label}
       </button>
     );
   };

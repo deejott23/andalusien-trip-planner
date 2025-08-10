@@ -276,18 +276,18 @@ const NoteCard: React.FC<{
           {getCategoryIcon(entry.category, 'w-5 h-5 text-amber-500 mt-1 flex-shrink-0')}
           <div className="w-full">
             {entry.title && (
-              <h3 className="font-bold text-slate-800 mb-2">
+            <h3 className="font-bold text-slate-800 mb-2 break-words">
                 {entry.url ? (
                   <a 
                     href={entry.url} 
                     target="_blank" 
                     rel="noopener" 
-                    className="hover:text-blue-600 transition-colors cursor-pointer"
+                  className="hover:text-blue-600 transition-colors cursor-pointer break-words"
                   >
                     {entry.title}
                   </a>
                 ) : (
-                  entry.title
+                  <span className="break-words">{entry.title}</span>
                 )}
               </h3>
             )}
@@ -311,7 +311,7 @@ const NoteCard: React.FC<{
                   href={entry.url} 
                   target="_blank" 
                   rel="noopener" 
-                  className="text-sm text-amber-700 hover:text-amber-900 transition-colors cursor-pointer truncate"
+                  className="text-sm text-amber-700 hover:text-amber-900 transition-colors cursor-pointer break-all"
                   title={entry.url}
                 >
                   {getDomainFromUrl(entry.url)}
