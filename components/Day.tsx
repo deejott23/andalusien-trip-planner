@@ -162,7 +162,7 @@ const Day: React.FC<DayProps> = (props) => {
   );
 
   return (
-    <section id={day.id} className={`relative group bg-white rounded-2xl shadow-md p-3 sm:p-6 border-l-4 ${borderColorClass}`}>
+    <section id={`station-${day.id}`} className={`relative group bg-white rounded-2xl shadow-md p-3 sm:p-6 border-l-4 ${borderColorClass}`}>
       <DayActions />
       <div className="flex items-center gap-2 mb-3 sm:mb-4">
           {isEditingTitle ? (
