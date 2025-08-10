@@ -11,6 +11,9 @@ VITE_FIREBASE_APP_ID=1:123456789:web:abcdef123456
 # Gemini API (optional für URL-Metadaten)
 GEMINI_API_KEY=your-gemini-api-key-here
 
+# Einfacher Passwortschutz (optional). Setze ein Passwort, um einen Prompt anzuzeigen.
+VITE_APP_PASSWORD=
+
 # Anleitung:
 # 1. Gehe zu https://console.firebase.google.com/
 # 2. Erstelle ein neues Projekt oder wähle ein bestehendes
