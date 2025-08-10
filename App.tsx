@@ -259,7 +259,7 @@ export default function App(): React.ReactNode {
     const virtualPrefix = 'virtual-';
     if (dayEntryId.startsWith(virtualPrefix)) {
       if (dayEntryId === 'virtual-before-trip') {
-        const stationEl = document.getElementById('station-before-trip');
+        const stationEl = document.getElementById('before-trip');
         if (stationEl) {
           const y = stationEl.getBoundingClientRect().top + window.scrollY - 80;
           window.scrollTo({ top: y, behavior: 'smooth' });
@@ -269,7 +269,7 @@ export default function App(): React.ReactNode {
       const parts = dayEntryId.split('-');
       if (parts.length >= 3) {
         const stationId = parts.slice(1, parts.length - 1).join('-');
-        const stationEl = document.getElementById(`station-${stationId}`);
+        const stationEl = document.getElementById(`${stationId}`);
         if (stationEl) {
           const y = stationEl.getBoundingClientRect().top + window.scrollY - 80;
           window.scrollTo({ top: y, behavior: 'smooth' });
