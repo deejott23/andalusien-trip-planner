@@ -1,6 +1,6 @@
 import { initializeApp } from 'firebase/app';
 import { getFirestore, collection, doc, getDoc, setDoc, updateDoc, deleteDoc, onSnapshot, query, orderBy } from 'firebase/firestore';
-import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
+import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject, ref as storageRefFromUrl } from 'firebase/storage';
 import type { Trip } from '../types';
 
 // Firebase-Konfiguration
@@ -76,6 +76,19 @@ export const storageService = {
     }
   },
 
+  // Generische Datei (Data-URL) hochladen
+  async uploadDataUrl(dataUrl: string, fileName: string, folder: string = 'attachments'): Promise<string> {
+    if (!storage) {
+      throw new Error('Firebase Storage nicht verfügbar');
+    }
+    const response = await fetch(dataUrl);
+    const blob = await response.blob();
+    const uniqueFileName = `${Date.now()}-${fileName}`;
+    const storageRef = ref(storage, `${folder}/${uniqueFileName}`);
+    await uploadBytes(storageRef, blob);
+    return await getDownloadURL(storageRef);
+  },
+
   // Bild aus Firebase Storage löschen
   async deleteImage(imageUrl: string): Promise<void> {
     if (!storage) {
@@ -84,7 +97,7 @@ export const storageService = {
     }
 
     try {
-      const imageRef = ref(storage, imageUrl);
+      const imageRef = storageRefFromUrl(storage, imageUrl);
       await deleteObject(imageRef);
       console.log('✅ Bild erfolgreich gelöscht:', imageUrl);
     } catch (error) {

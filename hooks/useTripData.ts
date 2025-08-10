@@ -319,9 +319,7 @@ export const useTripData = (tripId: string = 'andalusien-2025') => {
         };
       });
     } else if (type === EntryTypeEnum.NOTE && data.content) {
-      // Bild-Handling:
-      // - Wenn imageDataUrl eine externe URL ist (http/https), nicht im Browser hochladen (CORS), sondern direkt übernehmen
-      // - Wenn es eine Data-URL ist (base64), in Firebase Storage hochladen
+      // Bild-Handling: Data-URLs in Storage hochladen, externe URLs direkt übernehmen
       let imageUrl = data.imageDataUrl;
       if (data.imageDataUrl) {
         const isExternal = /^https?:\/\//i.test(data.imageDataUrl);
@@ -331,14 +329,7 @@ export const useTripData = (tripId: string = 'andalusien-2025') => {
             imageUrl = await storageService.uploadImage(data.imageDataUrl, `image-${tempId}.jpg`);
           } catch (error) {
             console.error('Fehler beim Hochladen des Bildes:', error);
-            imageUrl = data.imageDataUrl;
-          }
-        } else if (!isExternal) {
-          // Unbekanntes Format – versuche Upload
-          try {
-            imageUrl = await storageService.uploadImage(data.imageDataUrl, `image-${tempId}.jpg`);
-          } catch (error) {
-            console.error('Fehler beim Hochladen des Bildes (unbekanntes Format):', error);
+            imageUrl = undefined;
           }
         }
       }
@@ -350,11 +341,34 @@ export const useTripData = (tripId: string = 'andalusien-2025') => {
         content: data.content,
         url: data.url,
         category: data.category || CategoryEnum.INFORMATION,
-        attachment: data.attachment,
+        // Attachment: falls Base64/Data-URL -> in Storage hochladen, sonst URL übernehmen
+        attachment: undefined,
         imageUrl: imageUrl,
         reactions: { likes: 0, dislikes: 0, userReaction: null },
       } as NoteEntry;
       
+      // Falls Attachment vorhanden, verarbeite es asynchron vor dem Setzen
+      if (data.attachment?.url) {
+        const isDataUrl = /^data:/i.test(data.attachment.url);
+        const isExternal = /^https?:\/\//i.test(data.attachment.url);
+        if (isDataUrl) {
+          try {
+            const uploadedUrl = await storageService.uploadDataUrl(data.attachment.url, data.attachment.name || `attachment-${tempId}`);
+            newEntry = {
+              ...(newEntry as any),
+              attachment: { ...data.attachment, url: uploadedUrl },
+            } as any;
+          } catch (error) {
+            console.error('Fehler beim Hochladen des Attachments:', error);
+          }
+        } else if (isExternal) {
+          newEntry = {
+            ...(newEntry as any),
+            attachment: data.attachment,
+          } as any;
+        }
+      }
+
       setTrip(prevTrip => {
         if (!prevTrip) return prevTrip;
         
