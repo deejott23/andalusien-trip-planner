@@ -157,7 +157,7 @@ export const useTripData = (tripId: string = 'andalusien-2025') => {
         
         // Größenprüfung vor dem Speichern
         const tripSize = JSON.stringify(cleanedTrip).length;
-        const maxSize = 800 * 1024; // 800 KB (sicherer als 1 MB)
+        const maxSize = 950 * 1024; // 950 KB Puffer (Firestore-Hardlimit ~1 MiB)
         
         if (tripSize > maxSize) {
           console.warn(`⚠️ Trip zu groß (${Math.round(tripSize/1024)} KB) - Erstelle Backup und zeige Warnung`);
