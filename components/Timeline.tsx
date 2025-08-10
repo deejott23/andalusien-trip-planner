@@ -42,10 +42,10 @@ const Timeline: React.FC<TimelineProps> = ({ stations, activeDayEntryId, onDayCl
   // Feste Timeline-Einträge unabhängig von unteren Tagesänderungen
   const timelineEntries = useMemo(() => {
     const fixed = [
-      { id: 'fixed-before', type: EntryTypeEnum.DAY_SEPARATOR as const, title: 'Vor dem Urlaub', date: '', stationColor: 'gray', stationTitle: 'Vor dem Urlaub' },
-      { id: 'fixed-cadiz', type: EntryTypeEnum.DAY_SEPARATOR as const, title: 'Cádiz', date: '2025-08-27', stationColor: 'orange', stationTitle: 'Cádiz' },
-      { id: 'fixed-marbella', type: EntryTypeEnum.DAY_SEPARATOR as const, title: 'Marbella', date: '2025-08-31', stationColor: 'blue', stationTitle: 'Marbella' },
-      { id: 'fixed-torrox', type: EntryTypeEnum.DAY_SEPARATOR as const, title: 'Torrox', date: '2025-09-04', stationColor: 'green', stationTitle: 'Torrox' },
+      { id: 'virtual-before-trip', type: EntryTypeEnum.DAY_SEPARATOR as const, title: 'Vor dem Urlaub', date: '', stationColor: 'gray', stationTitle: 'Vor dem Urlaub' },
+      { id: 'virtual-cadiz-0', type: EntryTypeEnum.DAY_SEPARATOR as const, title: 'Cádiz', date: '2025-08-27', stationColor: 'orange', stationTitle: 'Cádiz' },
+      { id: 'virtual-marbella-0', type: EntryTypeEnum.DAY_SEPARATOR as const, title: 'Marbella', date: '2025-08-31', stationColor: 'blue', stationTitle: 'Marbella' },
+      { id: 'virtual-torrox-0', type: EntryTypeEnum.DAY_SEPARATOR as const, title: 'Torrox', date: '2025-09-04', stationColor: 'green', stationTitle: 'Torrox' },
     ];
     return fixed as any;
   }, []);
