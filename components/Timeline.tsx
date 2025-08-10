@@ -93,15 +93,6 @@ const Timeline: React.FC<TimelineProps> = ({ stations, activeDayEntryId, onDayCl
       );
     }
     
-    // Feste Labels: V, 27-31, 31-4, 4-11
-    const labelMap: Record<string, string> = {
-      'Vor dem Urlaub': 'V',
-      'Cádiz': '27-31',
-      'Marbella': '31-4',
-      'Torrox': '4-11',
-    };
-    const label = labelMap[dayEntry.stationTitle] || '·';
-
     return (
       <button
         key={dayEntry.id}
@@ -109,7 +100,7 @@ const Timeline: React.FC<TimelineProps> = ({ stations, activeDayEntryId, onDayCl
         className={`relative rounded-full flex items-center justify-center text-white text-xs font-bold ${colors.bg} border-2 ${colors.border} shadow-md transition-all duration-300 ease-in-out hover:scale-110 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-amber-50 ${isActive ? 'w-6 h-6 sm:w-7 sm:h-7 scale-110' : 'w-5 h-5'} flex-shrink-0`}
         aria-label={dayEntry.title}
       >
-        {label}
+        {/* Kreis ohne großen Text, Label unten */}
       </button>
     );
   };
@@ -182,7 +173,28 @@ const Timeline: React.FC<TimelineProps> = ({ stations, activeDayEntryId, onDayCl
                 {firstRowDays.map(d => <DayNode key={d.id} dayEntry={d} />)}
               </div>
             </div>
-            <StationLabel days={firstRowDays} onLabelClick={onDayClick} />
+            {/* Labels unter der Linie: fester Satz inkl. Zeiträume */}
+            <div className="w-full flex">
+              {firstRowDays.map((d) => {
+                const colors = colorMapping[d.stationColor] || colorMapping.gray;
+                const widthPercentage = 100 / firstRowDays.length;
+                const ranges: Record<string, string> = { 'Vor dem Urlaub': 'V', 'Cádiz': '27–31', 'Marbella': '31–4', 'Torrox': '4–11' };
+                return (
+                  <div
+                    key={d.id}
+                    style={{ width: `${widthPercentage}%` }}
+                    className={`text-center px-1 cursor-pointer select-none`}
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => onDayClick(d.id)}
+                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onDayClick(d.id); } }}
+                  >
+                    <div className={`font-semibold text-xs ${colors.text}`}>{d.stationTitle}</div>
+                    <div className="text-[10px] text-slate-500 mt-0.5">{ranges[d.stationTitle] || ''}</div>
+                  </div>
+                );
+              })}
+            </div>
             
             {/* --- U-Turn & Second Row --- */}
             {needsTwoRows && (
