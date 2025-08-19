@@ -467,9 +467,11 @@ export default function App(): React.ReactNode {
                       </div>
           </main>
 
-          {/* Footer for admin backup */}
-          <footer className="py-4 text-center text-xs text-slate-500">
+          {/* Footer */}
+          <footer className="py-4 text-center text-xs text-slate-500 flex items-center justify-center gap-3">
             <button onClick={() => setShowBackupPanel(true)} className="underline hover:text-slate-700">Backup</button>
+            <span className="opacity-60">•</span>
+            <span>Version: {import.meta.env.APP_VERSION}</span>
           </footer>
 
         <AddDayModal
