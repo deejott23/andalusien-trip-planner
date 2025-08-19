@@ -227,12 +227,61 @@ export const storageService = {
     } catch (error) {
       console.warn('⚠️ Auth fehlgeschlagen, versuche Upload ohne Auth...');
     }
-    const response = await fetch(dataUrl);
-    const blob = await response.blob();
-    const uniqueFileName = `${Date.now()}-${fileName}`;
-    const storageRef = ref(storage, `${folder}/${uniqueFileName}`);
-    await uploadBytes(storageRef, blob);
-    return await getDownloadURL(storageRef);
+
+    try {
+      // Prüfe ob es sich um ein Bild handelt
+      if (dataUrl.startsWith('data:image/')) {
+        console.log('🖼️ Bild erkannt, starte Komprimierung...');
+        
+        // Bild komprimieren
+        const compressedBlob = await this.compressImage(dataUrl, 0.7, 1024);
+        
+        console.log(`📊 Komprimierung abgeschlossen: ${compressedBlob.size} Bytes`);
+        
+        // Eindeutigen Dateinamen generieren
+        const uniqueFileName = `${Date.now()}-${fileName}`;
+        const storageRef = ref(storage, `${folder}/${uniqueFileName}`);
+        
+        // Komprimiertes Bild hochladen
+        await uploadBytes(storageRef, compressedBlob);
+        
+        // Download-URL abrufen
+        const downloadURL = await getDownloadURL(storageRef);
+        console.log('✅ Komprimiertes Bild erfolgreich hochgeladen:', downloadURL);
+        
+        return downloadURL;
+      } else {
+        // Kein Bild - normaler Upload
+        console.log('📎 Kein Bild, normaler Upload...');
+        const response = await fetch(dataUrl);
+        const blob = await response.blob();
+        const uniqueFileName = `${Date.now()}-${fileName}`;
+        const storageRef = ref(storage, `${folder}/${uniqueFileName}`);
+        await uploadBytes(storageRef, blob);
+        return await getDownloadURL(storageRef);
+      }
+    } catch (error) {
+      console.error('❌ Fehler beim Upload:', error);
+      
+      // Fallback: Versuche Upload ohne Komprimierung
+      console.log('🔄 Fallback: Upload ohne Komprimierung...');
+      try {
+        const response = await fetch(dataUrl);
+        const originalBlob = await response.blob();
+        console.log(`📊 Original-Größe: ${originalBlob.size} Bytes`);
+        
+        const uniqueFileName = `${Date.now()}-${fileName}`;
+        const storageRef = ref(storage, `${folder}/${uniqueFileName}`);
+        await uploadBytes(storageRef, originalBlob);
+        
+        const downloadURL = await getDownloadURL(storageRef);
+        console.log('✅ Original-Datei erfolgreich hochgeladen:', downloadURL);
+        return downloadURL;
+      } catch (fallbackError) {
+        console.error('❌ Auch Fallback-Upload fehlgeschlagen:', fallbackError);
+        throw error; // Werfe den ursprünglichen Fehler
+      }
+    }
   },
 
   // Rohtext/HTML als Datei hochladen
