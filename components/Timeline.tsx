@@ -157,14 +157,7 @@ const Timeline: React.FC<TimelineProps> = ({ stations, activeDayEntryId, onDayCl
 
   return (
     <div className="w-full max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-2">
-      {/* Kategorie-Filter über der Timeline */}
-              {/* Hashtag Filter über der Timeline */}
-        <HashtagFilter 
-          selectedHashtag={selectedHashtag} 
-          onHashtagChange={onHashtagChange} 
-          allEntries={allEntries}
-        />
-      
+      {/* Timeline oben */}
       <div className="relative pt-8">
         {activeDay && (
           <div className="absolute top-0 left-1/2 transform -translate-x-1/2 transition-all duration-300 ease-in-out z-30 pointer-events-none">
@@ -235,6 +228,13 @@ const Timeline: React.FC<TimelineProps> = ({ stations, activeDayEntryId, onDayCl
           </div>
         </div>
       </div>
+      
+      {/* Hashtag Filter unter der Timeline */}
+      <HashtagFilter 
+        selectedHashtag={selectedHashtag} 
+        onHashtagChange={onHashtagChange} 
+        allEntries={allEntries}
+      />
     </div>
   );
 };

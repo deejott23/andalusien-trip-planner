@@ -67,14 +67,13 @@ const HashtagFilter: React.FC<HashtagFilterProps> = ({ selectedHashtag, onHashta
 
   return (
     <div className="bg-white/60 backdrop-blur-sm border border-slate-200/60 rounded-lg p-2 mb-3 shadow-sm">
-      <div className="flex items-center gap-2 mb-2">
-        <h3 className="text-xs font-medium text-slate-600">#</h3>
-        {selectedHashtag && (
+      {selectedHashtag && (
+        <div className="mb-2 text-center">
           <span className="text-xs text-slate-500">
             {selectedHashtag}
           </span>
-        )}
-      </div>
+        </div>
+      )}
       
       <div className="flex flex-wrap gap-1">
         {topHashtags.map(({ hashtag, count }) => (

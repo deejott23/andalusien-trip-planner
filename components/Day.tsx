@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import type { Day as DayType, Entry } from '../types';
+import { EntryTypeEnum } from '../types';
 import EntryCard from './EntryCard';
 // HashtagCloud pro Station entfernt - wird jetzt zentral über der Timeline angezeigt
 import { PlusIcon, TrashIcon, EditIcon, ArrowUpIcon, ArrowDownIcon } from './Icons';
@@ -212,17 +213,32 @@ const Day: React.FC<DayProps> = (props) => {
             strategy={verticalListSortingStrategy}
           >
             {day.entries.map((entry, index) => (
-              <SortableEntryCard
-                key={entry.id}
-                entry={entry}
-                entryIndex={index}
-                totalEntries={day.entries.length}
-                onDelete={() => onDeleteEntry(entry.id)}
-                onEdit={() => onEditEntry(entry)}
-                onMove={(direction) => onMoveEntry(day.id, index, index + direction)}
-                onUpdateReaction={(reaction) => onUpdateEntryReaction(day.id, entry.id, reaction)}
-                setEntryRef={setEntryRef}
-              />
+              <React.Fragment key={entry.id}>
+                <SortableEntryCard
+                  entry={entry}
+                  entryIndex={index}
+                  totalEntries={day.entries.length}
+                  onDelete={() => onDeleteEntry(entry.id)}
+                  onEdit={() => onEditEntry(entry)}
+                  onMove={(direction) => onMoveEntry(day.id, index, index + direction)}
+                  onUpdateReaction={(reaction) => onUpdateEntryReaction(day.id, entry.id, reaction)}
+                  setEntryRef={setEntryRef}
+                />
+                
+                {/* Blaues Plus nach jeder Trennlinie */}
+                {(entry.type === EntryTypeEnum.DAY_SEPARATOR || entry.type === EntryTypeEnum.SEPARATOR) && (
+                  <div className="flex justify-center py-2">
+                    <button
+                      onClick={onAddEntry}
+                      className="flex items-center justify-center w-8 h-8 bg-blue-500 text-white rounded-full shadow-md hover:bg-blue-600 hover:shadow-lg transition-all duration-200 transform hover:scale-110"
+                      aria-label="Eintrag nach dieser Trennlinie hinzufügen"
+                      title="Eintrag hier hinzufügen"
+                    >
+                      <PlusIcon className="w-4 h-4" />
+                    </button>
+                  </div>
+                )}
+              </React.Fragment>
             ))}
           </SortableContext>
         </DndContext>
