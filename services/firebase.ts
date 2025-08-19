@@ -67,13 +67,9 @@ export const authService = {
   },
   async ensureSignedIn() {
     if (!auth) return;
-    if (!auth.currentUser) {
-      try {
-        await signInAnonymously(auth);
-      } catch (e) {
-        console.warn('Anonyme Anmeldung fehlgeschlagen. Bitte in Firebase Console aktivieren.', e);
-      }
-    }
+    // Keine anonyme Anmeldung erzwingen - lass es ohne Auth laufen
+    // Das funktioniert, wenn die Storage-Regeln es erlauben
+    console.log('Auth-Status:', auth.currentUser ? 'Angemeldet' : 'Nicht angemeldet');
   }
 };
 
@@ -84,7 +80,6 @@ export const storageService = {
     if (!storage) {
       throw new Error('Firebase Storage nicht verfügbar');
     }
-    await authService.ensureSignedIn();
 
     try {
       // Base64 zu Blob konvertieren
@@ -114,7 +109,6 @@ export const storageService = {
     if (!storage) {
       throw new Error('Firebase Storage nicht verfügbar');
     }
-    await authService.ensureSignedIn();
     const response = await fetch(dataUrl);
     const blob = await response.blob();
     const uniqueFileName = `${Date.now()}-${fileName}`;
@@ -128,7 +122,6 @@ export const storageService = {
     if (!storage) {
       throw new Error('Firebase Storage nicht verfügbar');
     }
-    await authService.ensureSignedIn();
     const blob = new Blob([content], { type: mimeType });
     const uniqueFileName = `${Date.now()}-${fileName}`;
     const storageRef = ref(storage, `${folder}/${uniqueFileName}`);
