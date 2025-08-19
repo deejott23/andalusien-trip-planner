@@ -44,12 +44,6 @@ const EditEntryModal: React.FC<EditEntryModalProps> = ({ isOpen, onClose, onUpda
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file && formData?.type === EntryTypeEnum.INFO) {
-      // Prüfe Dateigröße (max 5MB)
-      if (file.size > 5 * 1024 * 1024) {
-        alert('Datei ist zu groß. Maximale Größe: 5MB');
-        return;
-      }
-      
       // Prüfe Dateityp
       if (!file.type.startsWith('image/')) {
         alert('Bitte wähle nur Bilddateien aus.');
@@ -76,12 +70,6 @@ const EditEntryModal: React.FC<EditEntryModalProps> = ({ isOpen, onClose, onUpda
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file && formData?.type === EntryTypeEnum.NOTE) {
-      // Prüfe Dateigröße (max 5MB)
-      if (file.size > 5 * 1024 * 1024) {
-        alert('Datei ist zu groß. Maximale Größe: 5MB');
-        return;
-      }
-      
       const reader = new FileReader();
       reader.onloadend = () => {
         const newAttachment: Attachment = {

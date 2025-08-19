@@ -404,16 +404,77 @@ export const useTripData = (tripId: string = 'andalusien-2025') => {
     }
   }, [trip]);
 
-  const updateEntry = useCallback((dayId: string, updatedEntry: Entry) => {
+  const updateEntry = useCallback(async (dayId: string, updatedEntry: Entry) => {
     if (!trip) return;
-    
+
+    let processedEntry = updatedEntry;
+
+    try {
+      // Falls Base64/Data-URLs vorhanden sind, vor dem Speichern in Storage hochladen
+      if (updatedEntry.type === EntryTypeEnum.INFO) {
+        const infoEntry = updatedEntry as InfoEntry;
+        // Bild-Upload
+        if (infoEntry.imageUrl && /^data:/i.test(infoEntry.imageUrl)) {
+          try {
+            const uploadedUrl = await storageService.uploadImage(infoEntry.imageUrl, `image-${infoEntry.id}.jpg`);
+            processedEntry = { ...infoEntry, imageUrl: uploadedUrl } as Entry;
+          } catch (e) {
+            console.error('Fehler beim Bild-Upload (INFO):', e);
+          }
+        }
+        // Attachment-Upload
+        if (infoEntry.attachment?.url && /^data:/i.test(infoEntry.attachment.url)) {
+          try {
+            const uploadedAttachmentUrl = await storageService.uploadDataUrl(
+              infoEntry.attachment.url,
+              infoEntry.attachment.name || `attachment-${infoEntry.id}`
+            );
+            processedEntry = {
+              ...(processedEntry as InfoEntry),
+              attachment: { ...infoEntry.attachment, url: uploadedAttachmentUrl },
+            } as Entry;
+          } catch (e) {
+            console.error('Fehler beim Attachment-Upload (INFO):', e);
+          }
+        }
+      } else if (updatedEntry.type === EntryTypeEnum.NOTE) {
+        const noteEntry = updatedEntry as NoteEntry;
+        // Bild-Upload (falls vorhanden)
+        if (noteEntry.imageUrl && /^data:/i.test(noteEntry.imageUrl)) {
+          try {
+            const uploadedUrl = await storageService.uploadImage(noteEntry.imageUrl, `image-${noteEntry.id}.jpg`);
+            processedEntry = { ...noteEntry, imageUrl: uploadedUrl } as Entry;
+          } catch (e) {
+            console.error('Fehler beim Bild-Upload (NOTE):', e);
+          }
+        }
+        // Attachment-Upload
+        if (noteEntry.attachment?.url && /^data:/i.test(noteEntry.attachment.url)) {
+          try {
+            const uploadedAttachmentUrl = await storageService.uploadDataUrl(
+              noteEntry.attachment.url,
+              noteEntry.attachment.name || `attachment-${noteEntry.id}`
+            );
+            processedEntry = {
+              ...(processedEntry as NoteEntry),
+              attachment: { ...noteEntry.attachment, url: uploadedAttachmentUrl },
+            } as Entry;
+          } catch (e) {
+            console.error('Fehler beim Attachment-Upload (NOTE):', e);
+          }
+        }
+      }
+    } catch (e) {
+      console.error('Fehler beim Verarbeiten des Eintrags vor dem Speichern:', e);
+    }
+
     setTrip((prevTrip) => {
       if (!prevTrip) return prevTrip;
-      
+
       // Spezielle Behandlung für "Vor dem Urlaub" Station
       if (dayId === 'before-trip') {
         const beforeTripExists = prevTrip.days.some(day => day.id === 'before-trip');
-        
+
         if (!beforeTripExists) {
           // Erstelle die Station falls sie nicht existiert
           const beforeTripDay = {
@@ -421,16 +482,16 @@ export const useTripData = (tripId: string = 'andalusien-2025') => {
             title: 'Vor dem Urlaub',
             duration: 0,
             color: 'gray',
-            entries: [updatedEntry]
+            entries: [processedEntry]
           };
-          
+
           return {
             ...prevTrip,
             days: [beforeTripDay, ...prevTrip.days]
           };
         }
       }
-      
+
       return {
         ...prevTrip,
         days: prevTrip.days.map((day) =>
@@ -438,7 +499,7 @@ export const useTripData = (tripId: string = 'andalusien-2025') => {
             ? {
                 ...day,
                 entries: day.entries.map((entry) =>
-                  entry.id === updatedEntry.id ? updatedEntry : entry
+                  entry.id === processedEntry.id ? processedEntry : entry
                 ),
               }
             : day
