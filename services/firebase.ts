@@ -139,7 +139,18 @@ export const tripService = {
       ]);
 
       if (tripDoc.exists()) {
-        return tripDoc.data() as Trip;
+        const data = tripDoc.data() as Trip;
+        // Falls nur Pointer gespeichert ist, lade den vollen Trip
+        if ((data as any).payloadUrl && (!data.days || data.days.length === 0)) {
+          try {
+            const res = await fetch((data as any).payloadUrl as unknown as string);
+            if (res.ok) {
+              const fullTrip = await res.json();
+              return fullTrip as Trip;
+            }
+          } catch {}
+        }
+        return data;
       }
       return null;
     } catch (error) {

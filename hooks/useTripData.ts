@@ -344,11 +344,19 @@ export const useTripData = (tripId: string = 'andalusien-2025') => {
 
             if (tripSize > maxSize) {
               try {
-                localStorage.setItem('andalusien-trip-backup-large', JSON.stringify(tripToSave));
-                localStorage.setItem('andalusien-trip-backup-large-timestamp', Date.now().toString());
+                // Fallback: gesamten Trip als Datei auslagern und nur Pointer speichern
+                const url = await storageService.uploadText(JSON.stringify(tripToSave), `trip-${tripToSave.id}.json`, 'trips', 'application/json');
+                tripToSave = { id: tripToSave.id, title: tripToSave.title, dateRange: tripToSave.dateRange, startDate: tripToSave.startDate, endDate: tripToSave.endDate, days: [], payloadUrl: url } as unknown as Trip;
+                tripSize = computeSize(tripToSave);
               } catch {}
-              setError(`Daten zu groß (${Math.round(tripSize/1024)} KB). Backup erstellt. Bitte Bilder entfernen oder Daten aufteilen.`);
-              return;
+              if (tripSize > maxSize) {
+                try {
+                  localStorage.setItem('andalusien-trip-backup-large', JSON.stringify(tripToSave));
+                  localStorage.setItem('andalusien-trip-backup-large-timestamp', Date.now().toString());
+                } catch {}
+                setError(`Daten zu groß (${Math.round(tripSize/1024)} KB). Backup erstellt. Bitte Bilder entfernen oder Daten aufteilen.`);
+                return;
+              }
             }
           }
 
