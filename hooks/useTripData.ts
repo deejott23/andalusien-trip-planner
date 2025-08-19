@@ -152,6 +152,37 @@ export const useTripData = (tripId: string = 'andalusien-2025') => {
             let hasChanges = false;
 
             const migrateEntry = async (entry: Entry): Promise<Entry> => {
+              const replaceDataUrlsInHtml = async (html: string, entryId: string): Promise<string> => {
+                if (!html || html.indexOf('data:') === -1) return html;
+                // Finde data:-Bilder in img/src
+                const srcRegex = /src=\"(data:[^\"]+)\"/g;
+                const replacements: Array<Promise<string>> = [];
+                const dataUrls: string[] = [];
+                let match: RegExpExecArray | null;
+                while ((match = srcRegex.exec(html)) !== null) {
+                  dataUrls.push(match[1]);
+                }
+                if (dataUrls.length === 0) return html;
+                for (let i = 0; i < dataUrls.length; i++) {
+                  const dataUrl = dataUrls[i];
+                  try {
+                    const uploadedUrl = await storageService.uploadDataUrl(dataUrl, `content-image-${entryId}-${i}.png`, 'images');
+                    replacements.push(Promise.resolve(uploadedUrl));
+                  } catch (e) {
+                    console.error('Migration: Content-Bild-Upload fehlgeschlagen', e);
+                    replacements.push(Promise.resolve(dataUrl));
+                  }
+                }
+                const uploaded = await Promise.all(replacements);
+                // Ersetze sequentiell
+                let replaced = html;
+                for (let i = 0; i < dataUrls.length; i++) {
+                  const original = dataUrls[i].replace(/[-/\\^$*+?.()|[\]{}]/g, r => r);
+                  replaced = replaced.replace(`src=\"${dataUrls[i]}\"`, `src=\"${uploaded[i]}\"`);
+                }
+                if (replaced !== html) hasChanges = true;
+                return replaced;
+              };
               if (entry.type === EntryTypeEnum.INFO) {
                 const info = entry as InfoEntry;
                 let next: InfoEntry = info;
@@ -173,6 +204,14 @@ export const useTripData = (tripId: string = 'andalusien-2025') => {
                     hasChanges = true;
                   } catch (e) {
                     console.error('Migration: Attachment-Upload (INFO) fehlgeschlagen', e);
+                  }
+                }
+
+                // Content-Migration (eingebettete data:-Bilder)
+                if (typeof next.content === 'string' && next.content.includes('data:')) {
+                  const migratedContent = await replaceDataUrlsInHtml(next.content, info.id);
+                  if (migratedContent !== next.content) {
+                    next = { ...next, content: migratedContent };
                   }
                 }
 
@@ -200,6 +239,14 @@ export const useTripData = (tripId: string = 'andalusien-2025') => {
                     hasChanges = true;
                   } catch (e) {
                     console.error('Migration: Attachment-Upload (NOTE) fehlgeschlagen', e);
+                  }
+                }
+
+                // Content-Migration (eingebettete data:-Bilder)
+                if (typeof next.content === 'string' && next.content.includes('data:')) {
+                  const migratedContent = await replaceDataUrlsInHtml(next.content, note.id);
+                  if (migratedContent !== next.content) {
+                    next = { ...next, content: migratedContent };
                   }
                 }
 
