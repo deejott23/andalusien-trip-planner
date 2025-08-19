@@ -220,7 +220,7 @@ const NoteCard: React.FC<{
   const { isMenuOpen, setIsMenuOpen, menuRef, triggerRef } = useCardMenu();
   
   // Entferne Leerzeilen aus dem Content
-  const cleanContent = entry.content.replace(/(<p><br><\/p>)+/g, '<p><br></p>');
+  const cleanContent = (entry.content || '').replace(/(<p><br><\/p>)+/g, '<p><br></p>');
   
   // Extrahiere Domain aus URL für Anzeige
   const getDomainFromUrl = (url: string) => {
@@ -291,7 +291,11 @@ const NoteCard: React.FC<{
                 )}
               </h3>
             )}
-            <div className="prose prose-sm max-w-none text-slate-700" dangerouslySetInnerHTML={{ __html: cleanContent }} />
+            {entry.contentUrl ? (
+              <iframe src={entry.contentUrl} className="w-full border-0" style={{minHeight:'100px'}} loading="lazy" />
+            ) : (
+              <div className="prose prose-sm max-w-none text-slate-700" dangerouslySetInnerHTML={{ __html: cleanContent }} />
+            )}
 
             {entry.imageUrl && (
               <div className="mt-3">

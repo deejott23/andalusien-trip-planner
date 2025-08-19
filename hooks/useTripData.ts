@@ -298,27 +298,62 @@ export const useTripData = (tripId: string = 'andalusien-2025') => {
           }
 
           // Größenprüfung vor dem Speichern
-          const tripSize = JSON.stringify(cleanedTrip).length;
+          let tripToSave: Trip = cleanedTrip;
+          const computeSize = (t: Trip) => JSON.stringify(t).length;
           const maxSize = 950 * 1024; // 950 KB Puffer (Firestore-Hardlimit ~1 MiB)
+          let tripSize = computeSize(tripToSave);
 
           if (tripSize > maxSize) {
-            console.warn(`⚠️ Trip zu groß (${Math.round(tripSize/1024)} KB) - Erstelle Backup und zeige Warnung`);
+            console.warn(`⚠️ Trip zu groß (${Math.round(tripSize/1024)} KB) – versuche Inhalte iterativ auszulagern`);
 
-            // Erstelle sofort ein Backup
             try {
-              localStorage.setItem('andalusien-trip-backup-large', JSON.stringify(cleanedTrip));
-              localStorage.setItem('andalusien-trip-backup-large-timestamp', Date.now().toString());
-              console.log('✅ Backup vor Größenproblem erstellt');
-            } catch (error) {
-              console.error('❌ Backup-Erstellung fehlgeschlagen:', error);
+              // Liste aller auslagerbaren Inhalte sammeln (größte zuerst)
+              type Candidate = { dayIdx: number; entryIdx: number; length: number };
+              const candidates: Candidate[] = [];
+              tripToSave.days.forEach((day, dayIdx) => {
+                day.entries.forEach((entry, entryIdx) => {
+                  if ((entry.type === EntryTypeEnum.INFO || entry.type === EntryTypeEnum.NOTE)) {
+                    const text = (entry as any).content as string;
+                    const hasUrl = Boolean((entry as any).contentUrl);
+                    if (text && text.length > 0 && !hasUrl) {
+                      candidates.push({ dayIdx, entryIdx, length: text.length });
+                    }
+                  }
+                });
+              });
+              candidates.sort((a,b) => b.length - a.length);
+
+              // Iterativ auslagern, bis unter Limit oder keine Kandidaten mehr
+              for (const c of candidates) {
+                if (tripSize <= maxSize) break;
+                const entry: any = (tripToSave.days[c.dayIdx].entries[c.entryIdx] as any);
+                const text: string = entry.content;
+                try {
+                  const url = await storageService.uploadText(text, `content-${entry.id}.html`, 'contents', 'text/html; charset=utf-8');
+                  entry.contentUrl = url;
+                  entry.content = '';
+                  // Größe nach jeder Auslagerung neu berechnen
+                  tripSize = computeSize(tripToSave);
+                } catch (e) {
+                  console.error('Auslagerung content fehlgeschlagen', e);
+                }
+              }
+            } catch (e) {
+              console.error('Fehler bei der Inhaltsauslagerung', e);
             }
 
-            setError(`Daten zu groß (${Math.round(tripSize/1024)} KB). Backup erstellt. Bitte Bilder entfernen oder Daten aufteilen.`);
-            return; // Nicht speichern, um Datenverlust zu verhindern
+            if (tripSize > maxSize) {
+              try {
+                localStorage.setItem('andalusien-trip-backup-large', JSON.stringify(tripToSave));
+                localStorage.setItem('andalusien-trip-backup-large-timestamp', Date.now().toString());
+              } catch {}
+              setError(`Daten zu groß (${Math.round(tripSize/1024)} KB). Backup erstellt. Bitte Bilder entfernen oder Daten aufteilen.`);
+              return;
+            }
           }
 
           // Firebase speichern
-          tripService.saveTrip(cleanedTrip).catch((err) => {
+          tripService.saveTrip(tripToSave).catch((err) => {
             console.error('Fehler beim automatischen Speichern:', err);
             setError('Fehler beim Speichern der Änderungen');
           });

@@ -32,6 +32,7 @@ export interface InfoEntry {
   type: EntryTypeEnum.INFO;
   title: string;
   content: string;
+  contentUrl?: string;
   url?: string;
   category: CategoryEnum;
   imageUrl?: string;
@@ -47,6 +48,7 @@ export interface NoteEntry {
   type: EntryTypeEnum.NOTE;
   title?: string;
   content: string;
+  contentUrl?: string;
   url?: string;
   category: CategoryEnum;
   imageUrl?: string;

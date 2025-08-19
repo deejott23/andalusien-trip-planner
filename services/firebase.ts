@@ -89,6 +89,18 @@ export const storageService = {
     return await getDownloadURL(storageRef);
   },
 
+  // Rohtext/HTML als Datei hochladen
+  async uploadText(content: string, fileName: string, folder: string = 'contents', mimeType: string = 'text/html; charset=utf-8'): Promise<string> {
+    if (!storage) {
+      throw new Error('Firebase Storage nicht verfügbar');
+    }
+    const blob = new Blob([content], { type: mimeType });
+    const uniqueFileName = `${Date.now()}-${fileName}`;
+    const storageRef = ref(storage, `${folder}/${uniqueFileName}`);
+    await uploadBytes(storageRef, blob);
+    return await getDownloadURL(storageRef);
+  },
+
   // Bild aus Firebase Storage löschen
   async deleteImage(imageUrl: string): Promise<void> {
     if (!storage) {
