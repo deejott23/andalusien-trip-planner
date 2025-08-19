@@ -104,26 +104,75 @@ export const storageService = {
     }
 
     try {
-      // Base64 zu Blob konvertieren
-      const response = await fetch(imageDataUrl);
-      const blob = await response.blob();
+      // Bild komprimieren
+      const compressedBlob = await this.compressImage(imageDataUrl, 0.7, 1024);
       
       // Eindeutigen Dateinamen generieren
       const uniqueFileName = `${Date.now()}-${fileName}`;
       const storageRef = ref(storage, `images/${uniqueFileName}`);
       
-      // Bild hochladen
-      await uploadBytes(storageRef, blob);
+      // Komprimiertes Bild hochladen
+      await uploadBytes(storageRef, compressedBlob);
       
       // Download-URL abrufen
       const downloadURL = await getDownloadURL(storageRef);
-      console.log('✅ Bild erfolgreich hochgeladen:', downloadURL);
+      console.log('✅ Komprimiertes Bild erfolgreich hochgeladen:', downloadURL);
       
       return downloadURL;
     } catch (error) {
       console.error('Fehler beim Hochladen des Bildes:', error);
       throw error;
     }
+  },
+
+  // Bild komprimieren
+  async compressImage(dataUrl: string, quality: number = 0.7, maxWidth: number = 1024): Promise<Blob> {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => {
+        try {
+          const canvas = document.createElement('canvas');
+          const ctx = canvas.getContext('2d');
+          
+          if (!ctx) {
+            reject(new Error('Canvas-Kontext nicht verfügbar'));
+            return;
+          }
+          
+          // Größe berechnen (Breite begrenzen, Höhe proportional)
+          let { width, height } = img;
+          if (width > maxWidth) {
+            height = (height * maxWidth) / width;
+            width = maxWidth;
+          }
+          
+          canvas.width = width;
+          canvas.height = height;
+          
+          // Bild zeichnen
+          ctx.drawImage(img, 0, 0, width, height);
+          
+          // Als Blob mit Komprimierung exportieren
+          canvas.toBlob(
+            (blob) => {
+              if (blob) {
+                console.log(`✅ Bild komprimiert: ${width}x${height}, Qualität: ${quality}`);
+                resolve(blob);
+              } else {
+                reject(new Error('Bildkomprimierung fehlgeschlagen'));
+              }
+            },
+            'image/jpeg',
+            quality
+          );
+        } catch (error) {
+          reject(error);
+        }
+      };
+      
+      img.onerror = () => reject(new Error('Bild konnte nicht geladen werden'));
+      img.src = dataUrl;
+    });
   },
 
   // Generische Datei (Data-URL) hochladen
