@@ -203,9 +203,22 @@ export const tripService = {
     try {
       return onSnapshot(
         doc(db, TRIPS_COLLECTION, tripId),
-        (doc) => {
-          if (doc.exists()) {
-            callback(doc.data() as Trip);
+        async (docSnap) => {
+          if (docSnap.exists()) {
+            const data = docSnap.data() as Trip;
+            if ((data as any).payloadUrl && (!data.days || data.days.length === 0)) {
+              try {
+                const res = await fetch((data as any).payloadUrl as unknown as string);
+                if (res.ok) {
+                  const fullTrip = await res.json();
+                  callback(fullTrip as Trip);
+                  return;
+                }
+              } catch (e) {
+                console.error('Fehler beim Laden des Trip-Payloads:', e);
+              }
+            }
+            callback(data);
           } else {
             callback(null);
           }
