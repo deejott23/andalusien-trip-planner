@@ -36,7 +36,7 @@ interface TimelineProps {
 
 // --- MAIN COMPONENT ---
 
-const Timeline: React.FC<TimelineProps> = ({ stations, activeDayEntryId, onDayClick, tripStartDate }) => {
+const Timeline: React.FC<TimelineProps> = ({ stations, activeDayEntryId, onDayClick, tripStartDate, selectedCategory, onCategoryChange }) => {
   const [width] = useWindowSize();
   const containerRef = useRef<HTMLDivElement>(null);
 
