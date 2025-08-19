@@ -66,40 +66,40 @@ const HashtagFilter: React.FC<HashtagFilterProps> = ({ selectedHashtag, onHashta
   }
 
   return (
-    <div className="bg-white border border-slate-200 rounded-lg p-4 mb-6 shadow-sm">
-      <div className="flex items-center gap-3 mb-3">
-        <h3 className="text-sm font-medium text-slate-700">Trending Hashtags:</h3>
+    <div className="bg-white/60 backdrop-blur-sm border border-slate-200/60 rounded-lg p-2 mb-3 shadow-sm">
+      <div className="flex items-center gap-2 mb-2">
+        <h3 className="text-xs font-medium text-slate-600">#</h3>
         {selectedHashtag && (
           <span className="text-xs text-slate-500">
-            Zeige nur: {selectedHashtag}
+            {selectedHashtag}
           </span>
         )}
       </div>
       
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-wrap gap-1">
         {topHashtags.map(({ hashtag, count }) => (
           <button
             key={hashtag}
             onClick={() => handleHashtagClick(hashtag)}
-            className={`px-3 py-2 rounded-full border transition-all text-sm font-medium ${
+            className={`px-2 py-1 rounded-md border transition-all text-xs font-medium ${
               selectedHashtag === hashtag
-                ? 'border-blue-500 bg-blue-50 text-blue-700 shadow-sm'
-                : 'border-slate-300 hover:border-slate-400 hover:bg-slate-50 text-slate-600'
+                ? 'border-blue-400 bg-blue-100 text-blue-700'
+                : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50 text-slate-500'
             }`}
             title={`${selectedHashtag === hashtag ? 'Filter deaktivieren' : 'Nur ' + hashtag + ' anzeigen'} (${count}x)`}
           >
-            {hashtag} <span className="text-xs opacity-70">({count})</span>
+            {hashtag.replace('#', '')} <span className="text-xs opacity-60">({count})</span>
           </button>
         ))}
       </div>
       
       {selectedHashtag && (
-        <div className="mt-3 text-center">
+        <div className="mt-2 text-center">
           <button
             onClick={() => onHashtagChange(null)}
             className="text-xs text-blue-600 hover:text-blue-800 underline"
           >
-            Alle Hashtags anzeigen
+            Alle anzeigen
           </button>
         </div>
       )}
