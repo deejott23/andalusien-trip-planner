@@ -74,13 +74,16 @@ export const authService = {
         console.log('🔐 Versuche anonyme Anmeldung...');
         await signInAnonymously(auth);
         console.log('✅ Anonyme Anmeldung erfolgreich');
+        return true; // Auth erfolgreich
       } catch (error) {
         console.warn('⚠️ Anonyme Anmeldung fehlgeschlagen:', error);
         // Fallback: Lass es ohne Auth laufen (falls Storage-Regeln offen sind)
         console.log('ℹ️ Lade ohne Authentifizierung...');
+        return false; // Auth fehlgeschlagen
       }
     } else {
       console.log('✅ Bereits angemeldet:', auth.currentUser.uid);
+      return true; // Bereits angemeldet
     }
   }
 };
@@ -93,8 +96,12 @@ export const storageService = {
       throw new Error('Firebase Storage nicht verfügbar');
     }
     
-    // Stelle sicher, dass der Benutzer angemeldet ist
-    await authService.ensureSignedIn();
+    // Versuche Auth, aber fahre fort falls es fehlschlägt
+    try {
+      await authService.ensureSignedIn();
+    } catch (error) {
+      console.warn('⚠️ Auth fehlgeschlagen, versuche Upload ohne Auth...');
+    }
 
     try {
       // Base64 zu Blob konvertieren
@@ -125,8 +132,12 @@ export const storageService = {
       throw new Error('Firebase Storage nicht verfügbar');
     }
     
-    // Stelle sicher, dass der Benutzer angemeldet ist
-    await authService.ensureSignedIn();
+    // Versuche Auth, aber fahre fort falls es fehlschlägt
+    try {
+      await authService.ensureSignedIn();
+    } catch (error) {
+      console.warn('⚠️ Auth fehlgeschlagen, versuche Upload ohne Auth...');
+    }
     const response = await fetch(dataUrl);
     const blob = await response.blob();
     const uniqueFileName = `${Date.now()}-${fileName}`;
@@ -141,8 +152,12 @@ export const storageService = {
       throw new Error('Firebase Storage nicht verfügbar');
     }
     
-    // Stelle sicher, dass der Benutzer angemeldet ist
-    await authService.ensureSignedIn();
+    // Versuche Auth, aber fahre fort falls es fehlschlägt
+    try {
+      await authService.ensureSignedIn();
+    } catch (error) {
+      console.warn('⚠️ Auth fehlgeschlagen, versuche Upload ohne Auth...');
+    }
     const blob = new Blob([content], { type: mimeType });
     const uniqueFileName = `${Date.now()}-${fileName}`;
     const storageRef = ref(storage, `${folder}/${uniqueFileName}`);
