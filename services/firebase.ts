@@ -67,9 +67,9 @@ export const authService = {
   },
   async ensureSignedIn() {
     if (!auth) return;
-    // Keine anonyme Anmeldung erzwingen - lass es ohne Auth laufen
-    // Das funktioniert, wenn die Storage-Regeln es erlauben
-    console.log('Auth-Status:', auth.currentUser ? 'Angemeldet' : 'Nicht angemeldet');
+    // Keine Auth-Requirements - lass es ohne Anmeldung laufen
+    // Das funktioniert, wenn die Storage-Regeln offen sind
+    console.log('Auth-Status: Keine Auth-Requirements');
   }
 };
 
