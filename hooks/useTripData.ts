@@ -144,42 +144,138 @@ export const useTripData = (tripId: string = 'andalusien-2025') => {
   useEffect(() => {
     if (trip && !loading) {
       const saveTimeout = setTimeout(() => {
-        const cleanedTrip = cleanTripData(trip);
-        
-        // Lokales Backup erstellen
-        try {
-          localStorage.setItem('andalusien-trip-backup', JSON.stringify(cleanedTrip));
-          localStorage.setItem('andalusien-trip-backup-timestamp', Date.now().toString());
-          console.log('✅ Lokales Backup erstellt');
-        } catch (error) {
-          console.warn('⚠️ Lokales Backup fehlgeschlagen:', error);
-        }
-        
-        // Größenprüfung vor dem Speichern
-        const tripSize = JSON.stringify(cleanedTrip).length;
-        const maxSize = 950 * 1024; // 950 KB Puffer (Firestore-Hardlimit ~1 MiB)
-        
-        if (tripSize > maxSize) {
-          console.warn(`⚠️ Trip zu groß (${Math.round(tripSize/1024)} KB) - Erstelle Backup und zeige Warnung`);
-          
-          // Erstelle sofort ein Backup
-          try {
-            localStorage.setItem('andalusien-trip-backup-large', JSON.stringify(cleanedTrip));
-            localStorage.setItem('andalusien-trip-backup-large-timestamp', Date.now().toString());
-            console.log('✅ Backup vor Größenproblem erstellt');
-          } catch (error) {
-            console.error('❌ Backup-Erstellung fehlgeschlagen:', error);
+        (async () => {
+          const cleanedTrip = cleanTripData(trip);
+
+          // Falls Data-URLs vorhanden sind, führe zuerst eine Migration in den Storage durch
+          const migratedTrip = await (async () => {
+            let hasChanges = false;
+
+            const migrateEntry = async (entry: Entry): Promise<Entry> => {
+              if (entry.type === EntryTypeEnum.INFO) {
+                const info = entry as InfoEntry;
+                let next: InfoEntry = info;
+
+                if (info.imageUrl && /^data:/i.test(info.imageUrl)) {
+                  try {
+                    const url = await storageService.uploadImage(info.imageUrl, `image-${info.id}.jpg`);
+                    next = { ...next, imageUrl: url };
+                    hasChanges = true;
+                  } catch (e) {
+                    console.error('Migration: Bild-Upload (INFO) fehlgeschlagen', e);
+                  }
+                }
+
+                if (info.attachment?.url && /^data:/i.test(info.attachment.url)) {
+                  try {
+                    const uploaded = await storageService.uploadDataUrl(info.attachment.url, info.attachment.name || `attachment-${info.id}`);
+                    next = { ...next, attachment: { ...info.attachment, url: uploaded } };
+                    hasChanges = true;
+                  } catch (e) {
+                    console.error('Migration: Attachment-Upload (INFO) fehlgeschlagen', e);
+                  }
+                }
+
+                return next;
+              }
+
+              if (entry.type === EntryTypeEnum.NOTE) {
+                const note = entry as NoteEntry;
+                let next: NoteEntry = note;
+
+                if (note.imageUrl && /^data:/i.test(note.imageUrl)) {
+                  try {
+                    const url = await storageService.uploadImage(note.imageUrl, `image-${note.id}.jpg`);
+                    next = { ...next, imageUrl: url };
+                    hasChanges = true;
+                  } catch (e) {
+                    console.error('Migration: Bild-Upload (NOTE) fehlgeschlagen', e);
+                  }
+                }
+
+                if (note.attachment?.url && /^data:/i.test(note.attachment.url)) {
+                  try {
+                    const uploaded = await storageService.uploadDataUrl(note.attachment.url, note.attachment.name || `attachment-${note.id}`);
+                    next = { ...next, attachment: { ...note.attachment, url: uploaded } };
+                    hasChanges = true;
+                  } catch (e) {
+                    console.error('Migration: Attachment-Upload (NOTE) fehlgeschlagen', e);
+                  }
+                }
+
+                return next;
+              }
+
+              return entry;
+            };
+
+            // Prüfe schnell, ob Data-URLs existieren
+            const maybeHasDataUrls = JSON.stringify(cleanedTrip).includes('data:');
+            if (!maybeHasDataUrls) return null;
+
+            const migratedDays = [] as Day[];
+            for (const day of cleanedTrip.days) {
+              let dayChanged = false;
+              const newEntries: Entry[] = [];
+              for (const entry of day.entries) {
+                const migratedEntry = await migrateEntry(entry);
+                if (migratedEntry !== entry) dayChanged = true;
+                newEntries.push(migratedEntry);
+              }
+              migratedDays.push(dayChanged ? { ...day, entries: newEntries } : day);
+            }
+
+            if (!hasChanges) return null;
+            return { ...cleanedTrip, days: migratedDays } as Trip;
+          })();
+
+          if (migratedTrip) {
+            // Lokales Backup nach Migration
+            try {
+              localStorage.setItem('andalusien-trip-backup', JSON.stringify(migratedTrip));
+              localStorage.setItem('andalusien-trip-backup-timestamp', Date.now().toString());
+            } catch {}
+
+            // Setze migrierten Trip; Speichern passiert im nächsten Effekt-Lauf
+            setTrip(migratedTrip);
+            return;
           }
-          
-          setError(`Daten zu groß (${Math.round(tripSize/1024)} KB). Backup erstellt. Bitte Bilder entfernen oder Daten aufteilen.`);
-          return; // Nicht speichern, um Datenverlust zu verhindern
-        }
-        
-        // Firebase speichern
-        tripService.saveTrip(cleanedTrip).catch((err) => {
-          console.error('Fehler beim automatischen Speichern:', err);
-          setError('Fehler beim Speichern der Änderungen');
-        });
+
+          // Lokales Backup erstellen
+          try {
+            localStorage.setItem('andalusien-trip-backup', JSON.stringify(cleanedTrip));
+            localStorage.setItem('andalusien-trip-backup-timestamp', Date.now().toString());
+            console.log('✅ Lokales Backup erstellt');
+          } catch (error) {
+            console.warn('⚠️ Lokales Backup fehlgeschlagen:', error);
+          }
+
+          // Größenprüfung vor dem Speichern
+          const tripSize = JSON.stringify(cleanedTrip).length;
+          const maxSize = 950 * 1024; // 950 KB Puffer (Firestore-Hardlimit ~1 MiB)
+
+          if (tripSize > maxSize) {
+            console.warn(`⚠️ Trip zu groß (${Math.round(tripSize/1024)} KB) - Erstelle Backup und zeige Warnung`);
+
+            // Erstelle sofort ein Backup
+            try {
+              localStorage.setItem('andalusien-trip-backup-large', JSON.stringify(cleanedTrip));
+              localStorage.setItem('andalusien-trip-backup-large-timestamp', Date.now().toString());
+              console.log('✅ Backup vor Größenproblem erstellt');
+            } catch (error) {
+              console.error('❌ Backup-Erstellung fehlgeschlagen:', error);
+            }
+
+            setError(`Daten zu groß (${Math.round(tripSize/1024)} KB). Backup erstellt. Bitte Bilder entfernen oder Daten aufteilen.`);
+            return; // Nicht speichern, um Datenverlust zu verhindern
+          }
+
+          // Firebase speichern
+          tripService.saveTrip(cleanedTrip).catch((err) => {
+            console.error('Fehler beim automatischen Speichern:', err);
+            setError('Fehler beim Speichern der Änderungen');
+          });
+        })();
       }, 1000); // 1 Sekunde Verzögerung
 
       return () => clearTimeout(saveTimeout);
