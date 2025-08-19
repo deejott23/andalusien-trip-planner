@@ -1,7 +1,8 @@
 import React, { useMemo, useState, useEffect, useRef } from 'react';
 import type { Day, DaySeparatorEntry } from '../types';
-import { EntryTypeEnum } from '../types';
+import { EntryTypeEnum, CategoryEnum } from '../types';
 import { PlaneIcon } from './Icons';
+import CategoryFilter from './CategoryFilter';
 
 // --- HELPER HOOKS & COMPONENTS ---
 
@@ -29,6 +30,8 @@ interface TimelineProps {
   activeDayEntryId: string | null;
   onDayClick: (dayEntryId: string) => void;
   tripStartDate: string;
+  selectedCategory: CategoryEnum | null;
+  onCategoryChange: (category: CategoryEnum | null) => void;
 }
 
 // --- MAIN COMPONENT ---
@@ -150,6 +153,12 @@ const Timeline: React.FC<TimelineProps> = ({ stations, activeDayEntryId, onDayCl
 
   return (
     <div className="w-full max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-2">
+      {/* Kategorie-Filter über der Timeline */}
+      <CategoryFilter
+        selectedCategory={selectedCategory}
+        onCategoryChange={onCategoryChange}
+      />
+      
       <div className="relative pt-8">
         {activeDay && (
           <div className="absolute top-0 left-1/2 transform -translate-x-1/2 transition-all duration-300 ease-in-out z-30 pointer-events-none">

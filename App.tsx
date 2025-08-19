@@ -46,6 +46,7 @@ export default function App(): React.ReactNode {
   const [showBackupPanel, setShowBackupPanel] = useState(false);
   
   const [activeDayEntryId, setActiveDayEntryId] = useState<string | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState<CategoryEnum | null>(null);
   const entryRefs = useRef<Map<string, HTMLElement>>(new Map());
 
   // Debug-Info
@@ -366,41 +367,58 @@ export default function App(): React.ReactNode {
             activeDayEntryId={activeDayEntryId}
             onDayClick={handleScrollToDay}
             tripStartDate={trip.startDate}
+            selectedCategory={selectedCategory}
+            onCategoryChange={setSelectedCategory}
           />
         </header>
         
         <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
             <Header title={displayTrip?.title || ''} dateRange={displayTrip?.dateRange || ''} />
             <div className="space-y-4 sm:space-y-8 mt-4 sm:mt-8">
-                {allDays.map((day, index) => (
-                    <Day
-                        key={day.id}
-                        day={day}
-                        dayIndex={index}
-                        totalDays={allDays.length}
-                        onMoveDay={moveDay}
-                        onAddEntry={() => openAddEntryModal(day.id)}
-                        onDeleteDay={() => handleConfirmDeleteDay(day.id)}
-                        onUpdateDayTitle={(newTitle) => updateDay(day.id, { title: newTitle })}
-                        onDeleteEntry={(entryId) => handleConfirmDeleteEntry(entryId)}
-                        onEditEntry={(entry) => {
-                          if (entry.type === EntryTypeEnum.DAY_SEPARATOR) {
-                            openEditDaySeparatorModal(entry as DaySeparatorEntry);
-                          } else {
-                            openEditEntryModal(day.id, entry);
+                {allDays.map((day, index) => {
+                    // Filtere Einträge basierend auf der ausgewählten Kategorie
+                    const filteredEntries = selectedCategory 
+                      ? day.entries.filter(entry => {
+                          if (entry.type === EntryTypeEnum.DAY_SEPARATOR || entry.type === EntryTypeEnum.SEPARATOR) {
+                            return true; // Trennlinien immer anzeigen
                           }
-                        }}
-                        onMoveEntry={moveEntry}
-                        onUpdateEntryReaction={updateEntryReaction}
-                        setEntryRef={(entryId, el) => {
-                            if (el) {
-                                entryRefs.current.set(entryId, el);
-                            } else {
-                                entryRefs.current.delete(entryId);
-                            }
-                        }}
-                    />
-                ))}
+                          return entry.category === selectedCategory;
+                        })
+                      : day.entries;
+                    
+                    // Erstelle gefilterten Tag
+                    const filteredDay = { ...day, entries: filteredEntries };
+                    
+                    return (
+                        <Day
+                            key={day.id}
+                            day={filteredDay}
+                            dayIndex={index}
+                            totalDays={allDays.length}
+                            onMoveDay={moveDay}
+                            onAddEntry={() => openAddEntryModal(day.id)}
+                            onDeleteDay={() => handleConfirmDeleteDay(day.id)}
+                            onUpdateDayTitle={(newTitle) => updateDay(day.id, { title: newTitle })}
+                            onDeleteEntry={(entryId) => handleConfirmDeleteEntry(entryId)}
+                            onEditEntry={(entry) => {
+                              if (entry.type === EntryTypeEnum.DAY_SEPARATOR) {
+                                openEditDaySeparatorModal(entry as DaySeparatorEntry);
+                              } else {
+                                openEditEntryModal(day.id, entry);
+                              }
+                            }}
+                            onMoveEntry={moveEntry}
+                            onUpdateEntryReaction={updateEntryReaction}
+                            setEntryRef={(entryId, el) => {
+                                if (el) {
+                                    entryRefs.current.set(entryId, el);
+                                } else {
+                                    entryRefs.current.delete(entryId);
+                                }
+                            }}
+                        />
+                    );
+                })}
             </div>
 
           <div className="mt-6 sm:mt-8 pt-6 sm:pt-8 border-t border-slate-200/80 text-center space-y-4 hidden">
