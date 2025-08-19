@@ -3,6 +3,7 @@ import type { Entry, Attachment } from '../types';
 import { EntryTypeEnum, CategoryEnum } from '../types';
 import { XIcon, UploadCloudIcon, PaperclipIcon, getCategoryIcon } from './Icons';
 import RichTextEditor from './RichTextEditor';
+import HashtagInput from './HashtagInput';
 
 
 interface EditEntryModalProps {
@@ -136,7 +137,34 @@ const EditEntryModal: React.FC<EditEntryModalProps> = ({ isOpen, onClose, onUpda
                     className="w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500" 
                   />
                 </div>
-                
+
+                {/* Hashtag-Eingabe */}
+                <HashtagInput
+                  value={formData.hashtags || []}
+                  onChange={(hashtags) => setFormData(prev => prev ? { ...prev, hashtags } : null)}
+                  existingEntries={[]} // Leeres Array, da wir keine anderen Einträge für Vorschläge brauchen
+                  placeholder="z.B. #Reise #Spanien #Tapas"
+                />
+
+                <div>
+                  <label htmlFor="url" className="block text-sm font-medium text-slate-700 mb-1">URL (Optional)</label>
+                  <input 
+                    id="url" 
+                    name="url"
+                    type="url" 
+                    value={formData.url || ''} 
+                    onChange={handleChange} 
+                    placeholder="https://example.com" 
+                    className="w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500" 
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="content" className="block text-sm font-medium text-slate-700 mb-1">Inhalt *</label>
+                  <RichTextEditor value={formData.content} onChange={handleContentChange} />
+                </div>
+
+                {/* Kategorie nach unten verschoben */}
                 <div>
                   <label htmlFor="category" className="block text-sm font-medium text-slate-700 mb-1">Kategorie</label>
                   <div className="grid grid-cols-3 gap-2">
@@ -156,24 +184,6 @@ const EditEntryModal: React.FC<EditEntryModalProps> = ({ isOpen, onClose, onUpda
                       </button>
                     ))}
                   </div>
-                </div>
-
-                <div>
-                  <label htmlFor="url" className="block text-sm font-medium text-slate-700 mb-1">URL (Optional)</label>
-                  <input 
-                    id="url" 
-                    name="url"
-                    type="url" 
-                    value={formData.url || ''} 
-                    onChange={handleChange} 
-                    placeholder="https://example.com" 
-                    className="w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500" 
-                  />
-                </div>
-
-                <div>
-                  <label htmlFor="content" className="block text-sm font-medium text-slate-700 mb-1">Inhalt *</label>
-                  <RichTextEditor value={formData.content} onChange={handleContentChange} />
                 </div>
 
                 {formData.type === EntryTypeEnum.INFO && (

@@ -202,6 +202,20 @@ const LinkCard: React.FC<{
         </div>
                  <CardMenu isOpen={isMenuOpen} menuRef={menuRef} onEdit={onEdit} onDelete={onDelete} onMove={onMove} index={index} total={total} />
          <CardContent/>
+         
+         {/* Hashtags anzeigen */}
+         {entry.hashtags && entry.hashtags.length > 0 && (
+           <div className="px-4 pb-3 flex flex-wrap gap-1">
+             {entry.hashtags.map((hashtag, index) => (
+               <span
+                 key={index}
+                 className="inline-flex items-center px-2 py-1 bg-slate-100 text-slate-700 text-xs font-medium rounded-full"
+               >
+                 #{hashtag}
+               </span>
+             ))}
+           </div>
+         )}
     </div>
   );
 };
@@ -295,6 +309,20 @@ const NoteCard: React.FC<{
               <iframe src={entry.contentUrl} className="w-full border-0" style={{minHeight:'100px'}} loading="lazy" />
             ) : (
               <div className="prose prose-sm max-w-none text-slate-700" dangerouslySetInnerHTML={{ __html: cleanContent }} />
+            )}
+
+            {/* Hashtags anzeigen */}
+            {entry.hashtags && entry.hashtags.length > 0 && (
+              <div className="mt-3 flex flex-wrap gap-1">
+                {entry.hashtags.map((hashtag, index) => (
+                  <span
+                    key={index}
+                    className="inline-flex items-center px-2 py-1 bg-amber-100 text-amber-700 text-xs font-medium rounded-full"
+                  >
+                    #{hashtag}
+                  </span>
+                ))}
+              </div>
             )}
 
             {entry.imageUrl && (

@@ -3,6 +3,7 @@ import { EntryTypeEnum, CategoryEnum, Attachment, Day, DaySeparatorEntry, Separa
 import { XIcon, InfoIcon, FileTextIcon, UploadCloudIcon, PaperclipIcon, CalendarIcon, LinkIcon, MinusIcon, getCategoryIcon } from './Icons';
 import Spinner from './Spinner';
 import RichTextEditor from './RichTextEditor';
+import HashtagInput from './HashtagInput';
 
 interface AddEntryModalProps {
   isOpen: boolean;
@@ -23,6 +24,7 @@ const AddEntryModal: React.FC<AddEntryModalProps> = ({ isOpen, onClose, onAddEnt
   const [url, setUrl] = useState('');
   const [content, setContent] = useState('');
   const [category, setCategory] = useState<CategoryEnum>(CategoryEnum.INFORMATION);
+  const [hashtags, setHashtags] = useState<string[]>([]);
   const [imageDataUrl, setImageDataUrl] = useState<string | null>(null);
   const [attachment, setAttachment] = useState<Attachment | null>(null);
   const [daySeparatorTitle, setDaySeparatorTitle] = useState('');
@@ -41,6 +43,7 @@ const AddEntryModal: React.FC<AddEntryModalProps> = ({ isOpen, onClose, onAddEnt
       setUrl('');
       setContent('');
       setCategory(CategoryEnum.INFORMATION);
+      setHashtags([]);
       setImageDataUrl(null);
       setAttachment(null);
       setDaySeparatorTitle('');
@@ -170,6 +173,7 @@ const AddEntryModal: React.FC<AddEntryModalProps> = ({ isOpen, onClose, onAddEnt
         content: content, 
         url: url.trim() || undefined,
         category: category,
+        hashtags: hashtags.length > 0 ? hashtags : undefined,
         attachment: attachment || undefined,
         imageDataUrl: imageDataUrl || undefined
       });
@@ -228,6 +232,39 @@ const AddEntryModal: React.FC<AddEntryModalProps> = ({ isOpen, onClose, onAddEnt
                       placeholder="z.B. https://example.com oder Google-Maps-Link" 
                       className="w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500" 
                     />
+                    
+                    {/* URL-Lade-Funktion direkt unter dem URL-Feld */}
+                    {(mapsLoading || urlLoading) && (
+                      <div className="flex items-center gap-2 text-sm text-slate-500 mt-2">
+                        <span className="animate-spin inline-block w-4 h-4 border-2 border-current border-t-transparent rounded-full"></span> 
+                        Lade URL-Metadaten...
+                      </div>
+                    )}
+
+                    {mapsMetadata && (
+                      <div className="p-3 mt-2 border border-slate-200 rounded-lg bg-slate-50 space-y-2">
+                        {mapsMetadata.imageUrl && <img src={mapsMetadata.imageUrl} alt={mapsMetadata.title} className="w-full h-auto rounded" />}
+                        <div className="font-semibold text-slate-800">{mapsMetadata.title}</div>
+                        <div className="text-xs text-slate-600">{mapsMetadata.description}</div>
+                        <button type="button" onClick={() => {
+                          if (!content) setContent(mapsMetadata.description);
+                          if (!imageDataUrl && mapsMetadata.imageUrl) setImageDataUrl(mapsMetadata.imageUrl);
+                        }} className="mt-2 px-3 py-1.5 bg-blue-600 text-white rounded-md text-sm hover:bg-blue-700">Daten übernehmen</button>
+                      </div>
+                    )}
+
+                    {!mapsMetadata && urlMetadata && (
+                      <div className="p-3 mt-2 border border-slate-200 rounded-lg bg-slate-50 space-y-2">
+                        {urlMetadata.imageUrl && <img src={urlMetadata.imageUrl} alt={urlMetadata.title || 'Vorschaubild'} className="w-full h-auto rounded" />}
+                        {urlMetadata.title && <div className="font-semibold text-slate-800">{urlMetadata.title}</div>}
+                        {urlMetadata.description && <div className="text-xs text-slate-600">{urlMetadata.description}</div>}
+                        <button type="button" onClick={() => {
+                          if (!content && urlMetadata.description) setContent(urlMetadata.description);
+                          if (!imageDataUrl && urlMetadata.imageUrl) setImageDataUrl(urlMetadata.imageUrl);
+                          if (!title && urlMetadata.title) setTitle(urlMetadata.title);
+                        }} className="mt-2 px-3 py-1.5 bg-blue-600 text-white rounded-md text-sm hover:bg-blue-700">Daten übernehmen</button>
+                      </div>
+                    )}
                   </div>
 
                   <div>
@@ -241,7 +278,21 @@ const AddEntryModal: React.FC<AddEntryModalProps> = ({ isOpen, onClose, onAddEnt
                       className="w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500" 
                     />
                   </div>
-                  
+
+                  {/* Hashtag-Eingabe */}
+                  <HashtagInput
+                    value={hashtags}
+                    onChange={setHashtags}
+                    existingEntries={station?.entries || []}
+                    placeholder="z.B. #Reise #Spanien #Tapas"
+                  />
+
+                  <div>
+                    <label htmlFor="content" className="block text-sm font-medium text-slate-700 mb-1">Inhalt *</label>
+                    <RichTextEditor value={content} onChange={setContent} />
+                  </div>
+
+                  {/* Kategorie nach unten verschoben */}
                   <div>
                     <label htmlFor="category" className="block text-sm font-medium text-slate-700 mb-1">Kategorie</label>
                     <div className="grid grid-cols-3 gap-2">
@@ -261,40 +312,6 @@ const AddEntryModal: React.FC<AddEntryModalProps> = ({ isOpen, onClose, onAddEnt
                         </button>
                       ))}
                     </div>
-                  </div>
-
-                  {(mapsLoading || urlLoading) && (
-                    <div className="flex items-center gap-2 text-sm text-slate-500"><span className="animate-spin inline-block w-4 h-4 border-2 border-current border-t-transparent rounded-full"></span> Lade URL-Metadaten...</div>
-                  )}
-
-                  {mapsMetadata && (
-                    <div className="p-3 mt-2 border border-slate-200 rounded-lg bg-slate-50 space-y-2">
-                      {mapsMetadata.imageUrl && <img src={mapsMetadata.imageUrl} alt={mapsMetadata.title} className="w-full h-auto rounded" />}
-                      <div className="font-semibold text-slate-800">{mapsMetadata.title}</div>
-                      <div className="text-xs text-slate-600">{mapsMetadata.description}</div>
-                      <button type="button" onClick={() => {
-                        if (!content) setContent(mapsMetadata.description);
-                        if (!imageDataUrl && mapsMetadata.imageUrl) setImageDataUrl(mapsMetadata.imageUrl);
-                      }} className="mt-2 px-3 py-1.5 bg-blue-600 text-white rounded-md text-sm hover:bg-blue-700">Daten übernehmen</button>
-                    </div>
-                  )}
-
-                  {!mapsMetadata && urlMetadata && (
-                    <div className="p-3 mt-2 border border-slate-200 rounded-lg bg-slate-50 space-y-2">
-                      {urlMetadata.imageUrl && <img src={urlMetadata.imageUrl} alt={urlMetadata.title || 'Vorschaubild'} className="w-full h-auto rounded" />}
-                      {urlMetadata.title && <div className="font-semibold text-slate-800">{urlMetadata.title}</div>}
-                      {urlMetadata.description && <div className="text-xs text-slate-600">{urlMetadata.description}</div>}
-                      <button type="button" onClick={() => {
-                        if (!content && urlMetadata.description) setContent(urlMetadata.description);
-                        if (!imageDataUrl && urlMetadata.imageUrl) setImageDataUrl(urlMetadata.imageUrl);
-                        if (!title && urlMetadata.title) setTitle(urlMetadata.title);
-                      }} className="mt-2 px-3 py-1.5 bg-blue-600 text-white rounded-md text-sm hover:bg-blue-700">Daten übernehmen</button>
-                    </div>
-                  )}
-
-                  <div>
-                    <label htmlFor="content" className="block text-sm font-medium text-slate-700 mb-1">Inhalt *</label>
-                    <RichTextEditor value={content} onChange={setContent} />
                   </div>
 
                   <div>

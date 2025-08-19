@@ -41,6 +41,7 @@ export interface InfoEntry {
   status?: 'loading' | 'loaded' | 'error';
   description?: string;
   domain?: string;
+  hashtags?: string[];
 }
 
 export interface NoteEntry {
@@ -54,6 +55,7 @@ export interface NoteEntry {
   imageUrl?: string;
   attachment?: Attachment;
   reactions?: Reactions;
+  hashtags?: string[];
 }
 
 export interface DaySeparatorEntry {
