@@ -104,8 +104,12 @@ export const storageService = {
     }
 
     try {
+      console.log('🖼️ Starte Bildkomprimierung...');
+      
       // Bild komprimieren
       const compressedBlob = await this.compressImage(imageDataUrl, 0.7, 1024);
+      
+      console.log(`📊 Komprimierung abgeschlossen: ${compressedBlob.size} Bytes`);
       
       // Eindeutigen Dateinamen generieren
       const uniqueFileName = `${Date.now()}-${fileName}`;
@@ -120,17 +124,41 @@ export const storageService = {
       
       return downloadURL;
     } catch (error) {
-      console.error('Fehler beim Hochladen des Bildes:', error);
-      throw error;
+      console.error('❌ Fehler beim Hochladen des Bildes:', error);
+      
+      // Fallback: Versuche Upload ohne Komprimierung
+      console.log('🔄 Fallback: Upload ohne Komprimierung...');
+      try {
+        const response = await fetch(imageDataUrl);
+        const originalBlob = await response.blob();
+        console.log(`📊 Original-Größe: ${originalBlob.size} Bytes`);
+        
+        const uniqueFileName = `${Date.now()}-${fileName}`;
+        const storageRef = ref(storage, `images/${uniqueFileName}`);
+        await uploadBytes(storageRef, originalBlob);
+        
+        const downloadURL = await getDownloadURL(storageRef);
+        console.log('✅ Original-Bild erfolgreich hochgeladen:', downloadURL);
+        return downloadURL;
+      } catch (fallbackError) {
+        console.error('❌ Auch Fallback-Upload fehlgeschlagen:', fallbackError);
+        throw error; // Werfe den ursprünglichen Fehler
+      }
     }
   },
 
   // Bild komprimieren
   async compressImage(dataUrl: string, quality: number = 0.7, maxWidth: number = 1024): Promise<Blob> {
     return new Promise((resolve, reject) => {
+      console.log('🔧 Komprimiere Bild...');
+      
       const img = new Image();
+      img.crossOrigin = 'anonymous'; // Für CORS-Probleme
+      
       img.onload = () => {
         try {
+          console.log(`📐 Original-Größe: ${img.width}x${img.height}`);
+          
           const canvas = document.createElement('canvas');
           const ctx = canvas.getContext('2d');
           
@@ -142,8 +170,11 @@ export const storageService = {
           // Größe berechnen (Breite begrenzen, Höhe proportional)
           let { width, height } = img;
           if (width > maxWidth) {
-            height = (height * maxWidth) / width;
+            height = Math.round((height * maxWidth) / width);
             width = maxWidth;
+            console.log(`📏 Größe angepasst auf: ${width}x${height}`);
+          } else {
+            console.log(`📏 Größe bleibt: ${width}x${height}`);
           }
           
           canvas.width = width;
@@ -152,25 +183,34 @@ export const storageService = {
           // Bild zeichnen
           ctx.drawImage(img, 0, 0, width, height);
           
+          console.log(`🎨 Bild gezeichnet, starte Blob-Export...`);
+          
           // Als Blob mit Komprimierung exportieren
           canvas.toBlob(
             (blob) => {
               if (blob) {
-                console.log(`✅ Bild komprimiert: ${width}x${height}, Qualität: ${quality}`);
+                console.log(`✅ Bild komprimiert: ${width}x${height}, Qualität: ${quality}, Größe: ${blob.size} Bytes`);
                 resolve(blob);
               } else {
-                reject(new Error('Bildkomprimierung fehlgeschlagen'));
+                console.error('❌ Blob-Export fehlgeschlagen');
+                reject(new Error('Bildkomprimierung fehlgeschlagen - Blob-Export fehlgeschlagen'));
               }
             },
             'image/jpeg',
             quality
           );
         } catch (error) {
+          console.error('❌ Fehler in compressImage:', error);
           reject(error);
         }
       };
       
-      img.onerror = () => reject(new Error('Bild konnte nicht geladen werden'));
+      img.onerror = (error) => {
+        console.error('❌ Bild konnte nicht geladen werden:', error);
+        reject(new Error('Bild konnte nicht geladen werden'));
+      };
+      
+      console.log('🔄 Lade Bild...');
       img.src = dataUrl;
     });
   },
