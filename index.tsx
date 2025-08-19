@@ -2,6 +2,7 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
+import { AuthProvider } from './hooks/useAuth';
 
 // Einfache Passwortsperre (Client-seitig)
 const PASS_KEY = 'APP_UNLOCKED';
@@ -33,7 +34,9 @@ const root = ReactDOM.createRoot(rootElement);
 ensurePasswordGate().then(() => {
   root.render(
     <React.StrictMode>
-      <App />
+      <AuthProvider>
+        <App />
+      </AuthProvider>
     </React.StrictMode>
   );
 });

@@ -1,4 +1,5 @@
 import { initializeApp } from 'firebase/app';
+import { getAuth, onAuthStateChanged as fbOnAuthStateChanged, signInWithEmailAndPassword, signOut as fbSignOut, signInAnonymously, type User } from 'firebase/auth';
 import { getFirestore, collection, doc, getDoc, setDoc, updateDoc, deleteDoc, onSnapshot, query, orderBy } from 'firebase/firestore';
 import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject, ref as storageRefFromUrl } from 'firebase/storage';
 import type { Trip } from '../types';
@@ -27,6 +28,7 @@ const isFirebaseConfigured = () => {
 let app: any = null;
 let db: any = null;
 let storage: any = null;
+let auth: any = null;
 
 // Firebase initialisieren (nur wenn konfiguriert)
 if (isFirebaseConfigured()) {
@@ -34,6 +36,7 @@ if (isFirebaseConfigured()) {
     app = initializeApp(firebaseConfig);
     db = getFirestore(app);
     storage = getStorage(app);
+    auth = getAuth(app);
     console.log('✅ Firebase erfolgreich initialisiert');
   } catch (error) {
     console.error('❌ Firebase-Initialisierung fehlgeschlagen:', error);
@@ -45,6 +48,35 @@ if (isFirebaseConfigured()) {
 // Firestore-Sammlungen
 const TRIPS_COLLECTION = 'trips';
 
+// Auth-Service
+export const authService = {
+  onAuthStateChanged(callback: (user: User | null) => void) {
+    if (!auth) {
+      callback(null);
+      return () => {};
+    }
+    return fbOnAuthStateChanged(auth, callback);
+  },
+  async signIn(email: string, password: string) {
+    if (!auth) return;
+    await signInWithEmailAndPassword(auth, email, password);
+  },
+  async signOut() {
+    if (!auth) return;
+    await fbSignOut(auth);
+  },
+  async ensureSignedIn() {
+    if (!auth) return;
+    if (!auth.currentUser) {
+      try {
+        await signInAnonymously(auth);
+      } catch (e) {
+        console.warn('Anonyme Anmeldung fehlgeschlagen. Bitte in Firebase Console aktivieren.', e);
+      }
+    }
+  }
+};
+
 // Storage-Service Funktionen
 export const storageService = {
   // Bild in Firebase Storage hochladen
@@ -52,6 +84,7 @@ export const storageService = {
     if (!storage) {
       throw new Error('Firebase Storage nicht verfügbar');
     }
+    await authService.ensureSignedIn();
 
     try {
       // Base64 zu Blob konvertieren
@@ -81,6 +114,7 @@ export const storageService = {
     if (!storage) {
       throw new Error('Firebase Storage nicht verfügbar');
     }
+    await authService.ensureSignedIn();
     const response = await fetch(dataUrl);
     const blob = await response.blob();
     const uniqueFileName = `${Date.now()}-${fileName}`;
@@ -94,6 +128,7 @@ export const storageService = {
     if (!storage) {
       throw new Error('Firebase Storage nicht verfügbar');
     }
+    await authService.ensureSignedIn();
     const blob = new Blob([content], { type: mimeType });
     const uniqueFileName = `${Date.now()}-${fileName}`;
     const storageRef = ref(storage, `${folder}/${uniqueFileName}`);
