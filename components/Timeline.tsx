@@ -3,6 +3,7 @@ import type { Day, DaySeparatorEntry } from '../types';
 import { EntryTypeEnum, CategoryEnum } from '../types';
 import { PlaneIcon } from './Icons';
 import CategoryFilter from './CategoryFilter';
+import HashtagFilter from './HashtagFilter';
 
 // --- HELPER HOOKS & COMPONENTS ---
 
@@ -32,11 +33,14 @@ interface TimelineProps {
   tripStartDate: string;
   selectedCategory: CategoryEnum | null;
   onCategoryChange: (category: CategoryEnum | null) => void;
+  selectedHashtag: string | null;
+  onHashtagChange: (hashtag: string | null) => void;
+  allEntries: any[];
 }
 
 // --- MAIN COMPONENT ---
 
-const Timeline: React.FC<TimelineProps> = ({ stations, activeDayEntryId, onDayClick, tripStartDate, selectedCategory, onCategoryChange }) => {
+const Timeline: React.FC<TimelineProps> = ({ stations, activeDayEntryId, onDayClick, tripStartDate, selectedCategory, onCategoryChange, selectedHashtag, onHashtagChange, allEntries }) => {
   const [width] = useWindowSize();
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -154,10 +158,12 @@ const Timeline: React.FC<TimelineProps> = ({ stations, activeDayEntryId, onDayCl
   return (
     <div className="w-full max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-2">
       {/* Kategorie-Filter über der Timeline */}
-      <CategoryFilter
-        selectedCategory={selectedCategory}
-        onCategoryChange={onCategoryChange}
-      />
+              {/* Hashtag Filter über der Timeline */}
+        <HashtagFilter 
+          selectedHashtag={selectedHashtag} 
+          onHashtagChange={onHashtagChange} 
+          allEntries={allEntries}
+        />
       
       <div className="relative pt-8">
         {activeDay && (

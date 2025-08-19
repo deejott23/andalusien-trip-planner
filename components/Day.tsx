@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import type { Day as DayType, Entry } from '../types';
 import EntryCard from './EntryCard';
-import HashtagCloud from './HashtagCloud';
+// HashtagCloud pro Station entfernt - wird jetzt zentral über der Timeline angezeigt
 import { PlusIcon, TrashIcon, EditIcon, ArrowUpIcon, ArrowDownIcon } from './Icons';
 import {
   DndContext,
@@ -199,29 +199,7 @@ const Day: React.FC<DayProps> = (props) => {
           )}
       </div>
       
-      {/* Hashtag Cloud */}
-      <HashtagCloud 
-        entries={day.entries}
-        onHashtagClick={(hashtag) => {
-          // Finde den ersten Eintrag mit diesem Hashtag und scrolle zu ihm
-          const entryWithHashtag = day.entries.find(entry => {
-            const text = `${entry.title || ''} ${entry.content || ''} ${entry.description || ''}`;
-            return text.toLowerCase().includes(`#${hashtag.toLowerCase()}`);
-          });
-          
-          if (entryWithHashtag) {
-            const element = document.getElementById(entryWithHashtag.id);
-            if (element) {
-              element.scrollIntoView({ behavior: 'smooth', block: 'center' });
-              // Hervorhebung für 2 Sekunden
-              element.classList.add('ring-2', 'ring-blue-400', 'ring-opacity-75');
-              setTimeout(() => {
-                element.classList.remove('ring-2', 'ring-blue-400', 'ring-opacity-75');
-              }, 2000);
-            }
-          }
-        }}
-      />
+      {/* Hashtag Cloud pro Station entfernt - wird jetzt zentral über der Timeline angezeigt */}
       
       <div className="space-y-3 sm:space-y-4 pt-3 sm:pt-4 border-t border-slate-100">
         <DndContext

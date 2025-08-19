@@ -47,6 +47,7 @@ export default function App(): React.ReactNode {
   
   const [activeDayEntryId, setActiveDayEntryId] = useState<string | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<CategoryEnum | null>(null);
+  const [selectedHashtag, setSelectedHashtag] = useState<string | null>(null);
   const entryRefs = useRef<Map<string, HTMLElement>>(new Map());
 
   // Debug-Info
@@ -362,29 +363,58 @@ export default function App(): React.ReactNode {
   return (
       <div className="min-h-screen font-sans text-slate-800">
         <header className="sticky top-0 z-20 bg-amber-50/80 backdrop-blur-lg shadow-sm">
-           <Timeline 
-            stations={allDays}
-            activeDayEntryId={activeDayEntryId}
-            onDayClick={handleScrollToDay}
-            tripStartDate={trip.startDate}
-            selectedCategory={selectedCategory}
-            onCategoryChange={setSelectedCategory}
-          />
+                      <Timeline 
+             stations={allDays}
+             activeDayEntryId={activeDayEntryId}
+             onDayClick={handleScrollToDay}
+             tripStartDate={trip.startDate}
+             selectedCategory={selectedCategory}
+             onCategoryChange={setSelectedCategory}
+             selectedHashtag={selectedHashtag}
+             onHashtagChange={setSelectedHashtag}
+             allEntries={allDays.flatMap(day => day.entries)}
+           />
         </header>
         
         <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
             <Header title={displayTrip?.title || ''} dateRange={displayTrip?.dateRange || ''} />
             <div className="space-y-4 sm:space-y-8 mt-4 sm:mt-8">
                 {allDays.map((day, index) => {
-                    // Filtere Einträge basierend auf der ausgewählten Kategorie
-                    const filteredEntries = selectedCategory 
-                      ? day.entries.filter(entry => {
-                          if (entry.type === EntryTypeEnum.DAY_SEPARATOR || entry.type === EntryTypeEnum.SEPARATOR) {
-                            return true; // Trennlinien immer anzeigen
-                          }
-                          return entry.category === selectedCategory;
-                        })
-                      : day.entries;
+                                         // Filtere Einträge basierend auf der ausgewählten Kategorie und Hashtags
+                     let filteredEntries = day.entries;
+                     
+                     // Kategorie-Filter (falls aktiviert)
+                     if (selectedCategory) {
+                       filteredEntries = filteredEntries.filter(entry => {
+                         if (entry.type === EntryTypeEnum.DAY_SEPARATOR || entry.type === EntryTypeEnum.SEPARATOR) {
+                           return true; // Trennlinien immer anzeigen
+                         }
+                         return entry.category === selectedCategory;
+                       });
+                     }
+                     
+                     // Hashtag-Filter (falls aktiviert)
+                     if (selectedHashtag) {
+                       filteredEntries = filteredEntries.filter(entry => {
+                         if (entry.type === EntryTypeEnum.DAY_SEPARATOR || entry.type === EntryTypeEnum.SEPARATOR) {
+                           return true; // Trennlinien immer anzeigen
+                         }
+                         
+                         // Prüfe hashtags-Array
+                         if (entry.hashtags && Array.isArray(entry.hashtags)) {
+                           if (entry.hashtags.includes(selectedHashtag)) {
+                             return true;
+                           }
+                         }
+                         
+                         // Prüfe content auf Hashtags
+                         if (entry.content && entry.content.includes(selectedHashtag)) {
+                           return true;
+                         }
+                         
+                         return false;
+                       });
+                     }
                     
                     // Erstelle gefilterten Tag
                     const filteredDay = { ...day, entries: filteredEntries };
