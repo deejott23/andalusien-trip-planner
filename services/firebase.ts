@@ -67,9 +67,21 @@ export const authService = {
   },
   async ensureSignedIn() {
     if (!auth) return;
-    // Keine Auth-Requirements - lass es ohne Anmeldung laufen
-    // Das funktioniert, wenn die Storage-Regeln offen sind
-    console.log('Auth-Status: Keine Auth-Requirements');
+    
+    // Versuche anonyme Anmeldung, falls noch nicht angemeldet
+    if (!auth.currentUser) {
+      try {
+        console.log('🔐 Versuche anonyme Anmeldung...');
+        await signInAnonymously(auth);
+        console.log('✅ Anonyme Anmeldung erfolgreich');
+      } catch (error) {
+        console.warn('⚠️ Anonyme Anmeldung fehlgeschlagen:', error);
+        // Fallback: Lass es ohne Auth laufen (falls Storage-Regeln offen sind)
+        console.log('ℹ️ Lade ohne Authentifizierung...');
+      }
+    } else {
+      console.log('✅ Bereits angemeldet:', auth.currentUser.uid);
+    }
   }
 };
 
@@ -80,6 +92,9 @@ export const storageService = {
     if (!storage) {
       throw new Error('Firebase Storage nicht verfügbar');
     }
+    
+    // Stelle sicher, dass der Benutzer angemeldet ist
+    await authService.ensureSignedIn();
 
     try {
       // Base64 zu Blob konvertieren
@@ -109,6 +124,9 @@ export const storageService = {
     if (!storage) {
       throw new Error('Firebase Storage nicht verfügbar');
     }
+    
+    // Stelle sicher, dass der Benutzer angemeldet ist
+    await authService.ensureSignedIn();
     const response = await fetch(dataUrl);
     const blob = await response.blob();
     const uniqueFileName = `${Date.now()}-${fileName}`;
@@ -122,6 +140,9 @@ export const storageService = {
     if (!storage) {
       throw new Error('Firebase Storage nicht verfügbar');
     }
+    
+    // Stelle sicher, dass der Benutzer angemeldet ist
+    await authService.ensureSignedIn();
     const blob = new Blob([content], { type: mimeType });
     const uniqueFileName = `${Date.now()}-${fileName}`;
     const storageRef = ref(storage, `${folder}/${uniqueFileName}`);
