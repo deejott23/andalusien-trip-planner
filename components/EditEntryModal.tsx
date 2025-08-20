@@ -11,9 +11,10 @@ interface EditEntryModalProps {
   onClose: () => void;
   onUpdateEntry: (entry: Entry) => void;
   entry: Entry | null;
+  allEntries: Entry[];
 }
 
-const EditEntryModal: React.FC<EditEntryModalProps> = ({ isOpen, onClose, onUpdateEntry, entry }) => {
+const EditEntryModal: React.FC<EditEntryModalProps> = ({ isOpen, onClose, onUpdateEntry, entry, allEntries }) => {
   const [formData, setFormData] = useState<Entry | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -142,7 +143,7 @@ const EditEntryModal: React.FC<EditEntryModalProps> = ({ isOpen, onClose, onUpda
                 <HashtagInput
                   value={formData.hashtags || []}
                   onChange={(hashtags) => setFormData(prev => prev ? { ...prev, hashtags } : null)}
-                  existingEntries={[]} // Leeres Array, da wir keine anderen Einträge für Vorschläge brauchen
+                  existingEntries={allEntries || []}
                   placeholder="z.B. #Reise #Spanien #Tapas"
                 />
 

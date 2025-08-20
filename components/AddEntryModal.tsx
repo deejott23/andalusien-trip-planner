@@ -283,7 +283,7 @@ const AddEntryModal: React.FC<AddEntryModalProps> = ({ isOpen, onClose, onAddEnt
                   <HashtagInput
                     value={hashtags}
                     onChange={setHashtags}
-                    existingEntries={station?.entries || []}
+                    existingEntries={allDays.flatMap(day => day.entries)}
                     placeholder="z.B. #Reise #Spanien #Tapas"
                   />
 

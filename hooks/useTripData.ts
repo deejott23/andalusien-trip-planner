@@ -56,6 +56,34 @@ export const useTripData = (tripId: string = 'andalusien-2025') => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Hilfsfunktionen: Hashtags normalisieren (# prefix sicherstellen)
+  const normalizeHashtags = useCallback((hashtags?: string[]) => {
+    if (!hashtags || !Array.isArray(hashtags)) return hashtags;
+    return hashtags
+      .filter((tag) => typeof tag === 'string' && tag.trim().length > 0)
+      .map((tag) => {
+        const trimmed = tag.trim();
+        const withoutHashes = trimmed.replace(/^#+/, '');
+        return `#${withoutHashes}`;
+      });
+  }, []);
+
+  const normalizeTripData = useCallback((incoming: Trip | null): Trip | null => {
+    if (!incoming) return incoming;
+    return {
+      ...incoming,
+      days: incoming.days.map((day) => ({
+        ...day,
+        entries: day.entries.map((entry) => {
+          if ((entry as any).hashtags) {
+            return { ...(entry as any), hashtags: normalizeHashtags((entry as any).hashtags) } as Entry;
+          }
+          return entry;
+        }),
+      })),
+    };
+  }, [normalizeHashtags]);
+
   // Firebase Echtzeit-Updates abonnieren
   useEffect(() => {
     setLoading(true);
@@ -78,7 +106,7 @@ export const useTripData = (tripId: string = 'andalusien-2025') => {
       clearTimeout(timeoutId);
       if (firebaseTrip) {
         console.log('✅ Firebase-Daten geladen');
-        setTrip(firebaseTrip);
+        setTrip(normalizeTripData(firebaseTrip));
       } else {
         console.log('📋 Keine Firebase-Daten - Prüfe lokales Backup...');
         
@@ -94,7 +122,7 @@ export const useTripData = (tripId: string = 'andalusien-2025') => {
             if (backupAge < maxAge) {
               console.log('✅ Lokales Backup gefunden und geladen');
               const restoredTrip = JSON.parse(backupData);
-              setTrip(restoredTrip);
+              setTrip(normalizeTripData(restoredTrip));
               setLoading(false);
               return;
             } else {
@@ -418,7 +446,7 @@ export const useTripData = (tripId: string = 'andalusien-2025') => {
     });
   }, [trip]);
 
-  const addEntry = useCallback(async (dayId: string, type: EntryTypeEnum, data: { url?: string; content?: string; imageDataUrl?: string; attachment?: Attachment; title?: string; description?: string; date?: string; category?: CategoryEnum; style?: 'line' | 'section' | 'divider'; }) => {
+  const addEntry = useCallback(async (dayId: string, type: EntryTypeEnum, data: { url?: string; content?: string; imageDataUrl?: string; attachment?: Attachment; title?: string; description?: string; date?: string; category?: CategoryEnum; style?: 'line' | 'section' | 'divider'; hashtags?: string[]; }) => {
     if (!trip) return;
     
     const tempId = `temp-${Date.now()}`;
@@ -527,6 +555,7 @@ export const useTripData = (tripId: string = 'andalusien-2025') => {
         content: data.content,
         url: data.url,
         category: data.category || CategoryEnum.INFORMATION,
+        hashtags: data.hashtags,
         // Attachment: falls Base64/Data-URL -> in Storage hochladen, sonst URL übernehmen
         attachment: undefined,
         imageUrl: imageUrl,

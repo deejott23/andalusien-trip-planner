@@ -547,6 +547,7 @@ export default function App(): React.ReactNode {
           onClose={closeEditEntryModal}
           entry={editEntryModalState.entry}
           onUpdateEntry={handleUpdateEntry}
+          allEntries={allDays.flatMap(day => day.entries)}
         />
 
         <EditDaySeparatorModal

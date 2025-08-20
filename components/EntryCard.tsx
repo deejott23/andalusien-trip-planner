@@ -211,7 +211,7 @@ const LinkCard: React.FC<{
                  key={index}
                  className="inline-flex items-center px-2 py-1 bg-slate-100 text-slate-700 text-xs font-medium rounded-full"
                >
-                 #{hashtag}
+                 {hashtag}
                </span>
              ))}
            </div>
@@ -319,7 +319,7 @@ const NoteCard: React.FC<{
                     key={index}
                     className="inline-flex items-center px-2 py-1 bg-amber-100 text-amber-700 text-xs font-medium rounded-full"
                   >
-                    #{hashtag}
+                    {hashtag}
                   </span>
                 ))}
               </div>

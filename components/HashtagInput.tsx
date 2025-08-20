@@ -39,6 +39,16 @@ const HashtagInput: React.FC<HashtagInputProps> = ({
           hashtagSet.add(match[1].toLowerCase());
         }
       });
+      
+      // Auch Hashtags aus dem hashtags-Array extrahieren
+      if (entry.hashtags && Array.isArray(entry.hashtags)) {
+        entry.hashtags.forEach(tag => {
+          const cleanTag = tag.replace('#', '').toLowerCase();
+          if (cleanTag) {
+            hashtagSet.add(cleanTag);
+          }
+        });
+      }
     });
     
     return Array.from(hashtagSet).sort();
@@ -49,7 +59,7 @@ const HashtagInput: React.FC<HashtagInputProps> = ({
     if (inputValue.trim()) {
       const input = inputValue.toLowerCase().replace('#', '');
       const filtered = existingHashtags
-        .filter(tag => tag.includes(input) && !value.includes(tag))
+        .filter(tag => tag.includes(input) && !value.includes(`#${tag}`))
         .slice(0, 5);
       setSuggestions(filtered);
       setShowSuggestions(filtered.length > 0);
@@ -73,15 +83,16 @@ const HashtagInput: React.FC<HashtagInputProps> = ({
 
   const addHashtag = (hashtag: string) => {
     const cleanHashtag = hashtag.replace('#', '').trim().toLowerCase();
-    if (cleanHashtag && !value.includes(cleanHashtag)) {
-      onChange([...value, cleanHashtag]);
+    if (cleanHashtag && !value.includes(`#${cleanHashtag}`)) {
+      onChange([...value, `#${cleanHashtag}`]);
     }
     setInputValue('');
     setShowSuggestions(false);
   };
 
   const removeHashtag = (index: number) => {
-    onChange(value.filter((_, i) => i !== index));
+    const newHashtags = value.filter((_, i) => i !== index);
+    onChange(newHashtags);
   };
 
   const handleInputKeyDown = (e: React.KeyboardEvent) => {
@@ -113,7 +124,7 @@ const HashtagInput: React.FC<HashtagInputProps> = ({
               key={index}
               className="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-700 text-xs font-medium rounded-full"
             >
-              #{hashtag}
+              {hashtag}
               <button
                 type="button"
                 onClick={() => removeHashtag(index)}

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 
 interface HashtagFilterProps {
   selectedHashtag: string | null;
@@ -8,10 +8,10 @@ interface HashtagFilterProps {
 
 const HashtagFilter: React.FC<HashtagFilterProps> = ({ selectedHashtag, onHashtagChange, allEntries }) => {
   // Extrahiere alle Hashtags aus allen Einträgen
-  const extractHashtags = (entries: any[]): string[] => {
+  const extractHashtags = useMemo((): string[] => {
     const hashtags: string[] = [];
     
-    entries.forEach(entry => {
+    allEntries.forEach(entry => {
       // Hashtags aus dem hashtags-Array
       if (entry.hashtags && Array.isArray(entry.hashtags)) {
         entry.hashtags.forEach((tag: string) => {
@@ -32,11 +32,11 @@ const HashtagFilter: React.FC<HashtagFilterProps> = ({ selectedHashtag, onHashta
     });
     
     return hashtags;
-  };
+  }, [allEntries]);
 
   // Zähle Hashtags und hole die Top 7
-  const getTopHashtags = (): { hashtag: string; count: number }[] => {
-    const allHashtags = extractHashtags(allEntries);
+  const getTopHashtags = useMemo((): { hashtag: string; count: number }[] => {
+    const allHashtags = extractHashtags;
     const hashtagCounts: { [key: string]: number } = {};
     
     allHashtags.forEach(hashtag => {
@@ -47,9 +47,9 @@ const HashtagFilter: React.FC<HashtagFilterProps> = ({ selectedHashtag, onHashta
       .map(([hashtag, count]) => ({ hashtag, count }))
       .sort((a, b) => b.count - a.count)
       .slice(0, 7);
-  };
+  }, [extractHashtags]);
 
-  const topHashtags = getTopHashtags();
+  const topHashtags = getTopHashtags;
 
   const handleHashtagClick = (hashtag: string) => {
     if (selectedHashtag === hashtag) {
