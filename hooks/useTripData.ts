@@ -446,7 +446,7 @@ export const useTripData = (tripId: string = 'andalusien-2025') => {
     });
   }, [trip]);
 
-  const addEntry = useCallback(async (dayId: string, type: EntryTypeEnum, data: { url?: string; content?: string; imageDataUrl?: string; attachment?: Attachment; title?: string; description?: string; date?: string; category?: CategoryEnum; style?: 'line' | 'section' | 'divider'; hashtags?: string[]; }) => {
+  const addEntry = useCallback(async (dayId: string, type: EntryTypeEnum, data: { url?: string; content?: string; imageDataUrl?: string; attachment?: Attachment; title?: string; description?: string; date?: string; category?: CategoryEnum; style?: 'line' | 'section' | 'divider'; hashtags?: string[]; _anchorEntryId?: string; }) => {
     if (!trip) return;
     
     const tempId = `temp-${Date.now()}`;
@@ -487,9 +487,29 @@ export const useTripData = (tripId: string = 'andalusien-2025') => {
         
         return {
           ...prevTrip,
-          days: prevTrip.days.map(day => 
-            day.id === dayId ? { ...day, entries: [...day.entries, newEntry] } : day
-          )
+          days: prevTrip.days.map(day => {
+            if (day.id !== dayId) return day;
+            const entries = [...day.entries];
+            const anchorId = (data as any)._anchorEntryId as string | undefined;
+            if (!anchorId) {
+              return { ...day, entries: [...entries, newEntry] };
+            }
+            const anchorIndex = entries.findIndex(e => e.id === anchorId);
+            if (anchorIndex === -1) {
+              return { ...day, entries: [...entries, newEntry] };
+            }
+            // Einfügen direkt NACH dem Anker und vor dem nächsten Separator/Day-Separator
+            let insertIndex = anchorIndex + 1;
+            for (let i = anchorIndex + 1; i < entries.length; i++) {
+              if (entries[i].type === EntryTypeEnum.DAY_SEPARATOR || entries[i].type === EntryTypeEnum.SEPARATOR) {
+                insertIndex = i; // vor dem nächsten Trenner
+                break;
+              }
+              insertIndex = i + 1; // ans Ende dieses Abschnitts
+            }
+            const newEntries = [...entries.slice(0, insertIndex), newEntry, ...entries.slice(insertIndex)];
+            return { ...day, entries: newEntries };
+          })
         };
       });
     } else if (type === EntryTypeEnum.SEPARATOR) {
@@ -527,9 +547,28 @@ export const useTripData = (tripId: string = 'andalusien-2025') => {
         
         return {
           ...prevTrip,
-          days: prevTrip.days.map(day => 
-            day.id === dayId ? { ...day, entries: [...day.entries, newEntry] } : day
-          )
+          days: prevTrip.days.map(day => {
+            if (day.id !== dayId) return day;
+            const entries = [...day.entries];
+            const anchorId = (data as any)._anchorEntryId as string | undefined;
+            if (!anchorId) {
+              return { ...day, entries: [...entries, newEntry] };
+            }
+            const anchorIndex = entries.findIndex(e => e.id === anchorId);
+            if (anchorIndex === -1) {
+              return { ...day, entries: [...entries, newEntry] };
+            }
+            let insertIndex = anchorIndex + 1;
+            for (let i = anchorIndex + 1; i < entries.length; i++) {
+              if (entries[i].type === EntryTypeEnum.DAY_SEPARATOR || entries[i].type === EntryTypeEnum.SEPARATOR) {
+                insertIndex = i;
+                break;
+              }
+              insertIndex = i + 1;
+            }
+            const newEntries = [...entries.slice(0, insertIndex), newEntry, ...entries.slice(insertIndex)];
+            return { ...day, entries: newEntries };
+          })
         };
       });
     } else if (type === EntryTypeEnum.NOTE && data.content) {
@@ -611,9 +650,28 @@ export const useTripData = (tripId: string = 'andalusien-2025') => {
         
         return {
           ...prevTrip,
-          days: prevTrip.days.map(day => 
-            day.id === dayId ? { ...day, entries: [...day.entries, newEntry] } : day
-          )
+          days: prevTrip.days.map(day => {
+            if (day.id !== dayId) return day;
+            const entries = [...day.entries];
+            const anchorId = (data as any)._anchorEntryId as string | undefined;
+            if (!anchorId) {
+              return { ...day, entries: [...entries, newEntry] };
+            }
+            const anchorIndex = entries.findIndex(e => e.id === anchorId);
+            if (anchorIndex === -1) {
+              return { ...day, entries: [...entries, newEntry] };
+            }
+            let insertIndex = anchorIndex + 1;
+            for (let i = anchorIndex + 1; i < entries.length; i++) {
+              if (entries[i].type === EntryTypeEnum.DAY_SEPARATOR || entries[i].type === EntryTypeEnum.SEPARATOR) {
+                insertIndex = i;
+                break;
+              }
+              insertIndex = i + 1;
+            }
+            const newEntries = [...entries.slice(0, insertIndex), newEntry, ...entries.slice(insertIndex)];
+            return { ...day, entries: newEntries };
+          })
         };
       });
     }

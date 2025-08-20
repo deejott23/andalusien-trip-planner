@@ -158,11 +158,14 @@ export default function App(): React.ReactNode {
   }, [daySeparatorEntries, activeDayEntryId, trip?.startDate]);
 
   // ALLE Hooks müssen vor den bedingten Returns stehen!
-  const openAddEntryModal = useCallback((dayId: string) => {
+  const [addAnchorEntryId, setAddAnchorEntryId] = useState<string | null>(null);
+  const openAddEntryModal = useCallback((dayId: string, anchorEntryId?: string) => {
+    setAddAnchorEntryId(anchorEntryId || null);
     setAddEntryModalState({ isOpen: true, dayId });
   }, []);
 
   const closeAddEntryModal = useCallback(() => {
+    setAddAnchorEntryId(null);
     setAddEntryModalState({ isOpen: false, dayId: null });
   }, []);
 
@@ -426,7 +429,7 @@ export default function App(): React.ReactNode {
                             dayIndex={index}
                             totalDays={allDays.length}
                             onMoveDay={moveDay}
-                            onAddEntry={() => openAddEntryModal(day.id)}
+                            onAddEntry={(anchorId) => openAddEntryModal(day.id, anchorId)}
                             onDeleteDay={() => handleConfirmDeleteDay(day.id)}
                             onUpdateDayTitle={(newTitle) => updateDay(day.id, { title: newTitle })}
                             onDeleteEntry={(entryId) => handleConfirmDeleteEntry(entryId)}
@@ -533,7 +536,7 @@ export default function App(): React.ReactNode {
           onClose={closeAddEntryModal}
           onAddEntry={async (entryType, data) => {
             if (addEntryModalState.dayId) {
-              await addEntry(addEntryModalState.dayId, entryType, data);
+              await addEntry(addEntryModalState.dayId, entryType, { ...data, _anchorEntryId: addAnchorEntryId || undefined });
               closeAddEntryModal();
             }
           }}

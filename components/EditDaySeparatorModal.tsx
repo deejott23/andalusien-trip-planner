@@ -32,9 +32,9 @@ const EditDaySeparatorModal: React.FC<EditDaySeparatorModalProps> = ({ isOpen, o
     // Bereits verwendete Daten entfernen
     const usedDates = new Set<string>();
     trip.days.forEach(day => {
-      day.entries.forEach(entry => {
-        if (entry.type === 'DAY_SEPARATOR' && entry.id !== entry?.id) {
-          usedDates.add(entry.date);
+      day.entries.forEach(e => {
+        if (e.type === 'DAY_SEPARATOR' && e.id !== entry?.id) {
+          usedDates.add(e.date);
         }
       });
     });

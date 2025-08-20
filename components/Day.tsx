@@ -29,7 +29,7 @@ interface DayProps {
   dayIndex: number;
   totalDays: number;
   onMoveDay: (fromIndex: number, toIndex: number) => void;
-  onAddEntry: () => void;
+  onAddEntry: (anchorEntryId?: string) => void;
   onDeleteDay: () => void;
   onUpdateDayTitle: (newTitle: string) => void;
   onDeleteEntry: (entryId: string) => void;
@@ -190,7 +190,7 @@ const Day: React.FC<DayProps> = (props) => {
                     <EditIcon className="w-5 h-5" />
                 </button>
                  <button
-                    onClick={onAddEntry}
+                    onClick={() => onAddEntry()}
                     className="p-2 text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-full transition-colors opacity-0 group-hover:opacity-100"
                     aria-label="Eintrag hinzufügen"
                 >
@@ -229,7 +229,7 @@ const Day: React.FC<DayProps> = (props) => {
                 {(entry.type === EntryTypeEnum.DAY_SEPARATOR || entry.type === EntryTypeEnum.SEPARATOR) && (
                   <div className="flex justify-center py-2">
                     <button
-                      onClick={onAddEntry}
+                      onClick={() => onAddEntry(entry.id)}
                       className="flex items-center justify-center w-8 h-8 bg-blue-500 text-white rounded-full shadow-md hover:bg-blue-600 hover:shadow-lg transition-all duration-200 transform hover:scale-110"
                       aria-label="Eintrag nach dieser Trennlinie hinzufügen"
                       title="Eintrag hier hinzufügen"

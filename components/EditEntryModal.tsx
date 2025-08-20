@@ -45,7 +45,7 @@ const EditEntryModal: React.FC<EditEntryModalProps> = ({ isOpen, onClose, onUpda
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file && formData?.type === EntryTypeEnum.INFO) {
+    if (file && (formData?.type === EntryTypeEnum.INFO || formData?.type === EntryTypeEnum.NOTE)) {
       // Prüfe Dateityp
       if (!file.type.startsWith('image/')) {
         alert('Bitte wähle nur Bilddateien aus.');
@@ -64,7 +64,7 @@ const EditEntryModal: React.FC<EditEntryModalProps> = ({ isOpen, onClose, onUpda
   };
   
   const removeImage = () => {
-      if (formData?.type === EntryTypeEnum.INFO) {
+      if (formData && (formData.type === EntryTypeEnum.INFO || formData.type === EntryTypeEnum.NOTE)) {
           setFormData({ ...formData, imageUrl: undefined });
       }
   };
@@ -187,7 +187,7 @@ const EditEntryModal: React.FC<EditEntryModalProps> = ({ isOpen, onClose, onUpda
                   </div>
                 </div>
 
-                {formData.type === EntryTypeEnum.INFO && (
+                {(formData.type === EntryTypeEnum.INFO || formData.type === EntryTypeEnum.NOTE) && (
                   <div>
                     <span className="block text-sm font-medium text-slate-700 mb-1">Eigenes Bild (Optional)</span>
                     <input type="file" ref={fileInputRef} onChange={handleImageChange} accept="image/*" className="hidden" />
